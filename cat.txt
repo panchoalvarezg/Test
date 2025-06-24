@@ -1,0 +1,184 @@
+package com.atraparalagato.impl.service;
+
+import com.atraparalagato.base.service.GameService;
+import com.atraparalagato.base.model.GameState;
+import com.atraparalagato.base.model.GameBoard;
+import com.atraparalagato.base.strategy.CatMovementStrategy;
+import com.atraparalagato.impl.model.HexPosition;
+import com.atraparalagato.impl.model.HexGameState;
+import com.atraparalagato.impl.model.HexGameBoard;
+import com.atraparalagato.impl.repository.H2GameRepository;
+import com.atraparalagato.impl.strategy.AStarCatMovement;
+
+import java.util.*;
+
+/**
+ * Implementación de GameService para el juego hexagonal.
+ */
+public class HexGameService extends GameService<HexPosition> {
+
+    public HexGameService() {
+        super(
+            new HexGameBoard(5),
+            new AStarCatMovement(new HexGameBoard(5)),
+            new H2GameRepository(),
+            () -> UUID.randomUUID().toString(),
+            (size) -> new HexGameBoard(size),
+            (gameId, size) -> new HexGameState(gameId, size)
+        );
+    }
+
+    @Override
+    protected void initializeGame(GameState<HexPosition> gameState, GameBoard<HexPosition> gameBoard) {
+        // Inicializa el juego: por ahora, nada extra
+    }
+
+    public HexGameState createGame(int boardSize, String difficulty, Map<String, Object> options) {
+        String gameId = UUID.randomUUID().toString();
+        HexGameBoard board = new HexGameBoard(boardSize);
+        HexGameState gameState = new HexGameState(gameId, boardSize);
+
+        // Configura dificultad básica
+        gameState.setGameDifficulty(difficulty);
+
+        // Guarda el nuevo juego
+        getGameRepository().save(gameState);
+
+        return gameState;
+    }
+
+    public Optional<HexGameState> executePlayerMove(String gameId, HexPosition position, String playerId) {
+        Optional<HexGameState> optionalGame = getGameRepository().findById(gameId);
+
+        if (optionalGame.isEmpty()) {
+            return Optional.empty();
+        }
+
+        HexGameState gameState = optionalGame.get();
+
+        if (!isValidAdvancedMove(gameState, position, playerId)) {
+            return Optional.of(gameState);
+        }
+
+        // Ejecuta el movimiento del jugador
+        gameState.performMove(position);
+
+        // Mueve el gato
+        executeCatMove(gameState, gameState.getDifficulty());
+
+        // Actualiza el estado del juego
+        gameState.updateGameStatus();
+
+        // Guarda los cambios
+        getGameRepository().save(gameState);
+
+        return Optional.of(gameState);
+    }
+
+    private void executeCatMove(HexGameState gameState, String difficulty) {
+        CatMovementStrategy<HexPosition> strategy = createMovementStrategy(difficulty, gameState.getGameBoard());
+        Optional<HexPosition> newCatPosition = strategy.getNextMove(gameState.getCatPosition(), gameState.getTargetPosition());
+
+        newCatPosition.ifPresent(gameState::setCatPosition);
+    }
+
+    private CatMovementStrategy<HexPosition> createMovementStrategy(String difficulty, HexGameBoard board) {
+        // De momento siempre usamos AStar, puedes extender esto para otros algoritmos si quieres
+        return new AStarCatMovement(board);
+    }
+
+    // Métodos abstractos de GameService
+    @Override
+    public boolean isValidMove(String gameId, HexPosition position) {
+        Optional<HexGameState> optionalGame = getGameRepository().findById(gameId);
+        return optionalGame.map(game -> game.canExecuteMove(position)).orElse(false);
+    }
+
+    @Override
+    public Optional<HexPosition> getSuggestedMove(String gameId) {
+        // Sugerencia básica: cualquier movimiento válido
+        Optional<HexGameState> optionalGame = getGameRepository().findById(gameId);
+
+        if (optionalGame.isPresent()) {
+            HexGameState gameState = optionalGame.get();
+            List<HexPosition> possibleMoves = gameState.getGameBoard()
+                .getPositionsWhere(pos -> gameState.canExecuteMove(pos));
+
+            if (!possibleMoves.isEmpty()) {
+                return Optional.of(possibleMoves.get(0));
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    protected HexPosition getTargetPosition(GameState<HexPosition> gameState) {
+        // TargetPosition en este caso es un borde cualquiera (A*)
+        return new HexPosition(gameState.getBoardSize(), 0);
+    }
+
+    @Override
+    public Object getGameStatistics(String gameId) {
+        Optional<HexGameState> optionalGame = getGameRepository().findById(gameId);
+
+        if (optionalGame.isEmpty()) {
+            return Map.of("error", "Game not found");
+        }
+
+        HexGameState gameState = optionalGame.get();
+
+        return Map.of(
+            "gameId", gameState.getGameId(),
+            "status", gameState.getStatus(),
+            "moveCount", gameState.getMoveCount(),
+            "catPosition", gameState.getCatPosition(),
+            "blockedPositions", gameState.getGameBoard().getBlockedPositions().size()
+        );
+    }
+
+    // Los siguientes métodos los puedes completar después
+    public Optional<Map<String, Object>> getEnrichedGameState(String gameId) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    public Optional<HexPosition> getIntelligentSuggestion(String gameId, String difficulty) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    public Map<String, Object> analyzeGame(String gameId) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    public Map<String, Object> getPlayerStatistics(String playerId) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    public void setGameDifficulty(String gameId, String difficulty) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    public boolean toggleGamePause(String gameId) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    public Optional<HexGameState> undoLastMove(String gameId) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    public List<Map<String, Object>> getLeaderboard(int limit) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    private boolean isValidAdvancedMove(HexGameState gameState, HexPosition position, String playerId) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    private int calculateAdvancedScore(HexGameState gameState, Map<String, Object> factors) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+
+    private void notifyGameEvent(String gameId, String eventType, Map<String, Object> eventData) {
+        throw new UnsupportedOperationException("Método no implementado aún");
+    }
+}
