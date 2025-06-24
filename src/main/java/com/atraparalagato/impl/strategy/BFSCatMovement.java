@@ -37,8 +37,8 @@ public class BFSCatMovement extends CatMovementStrategy<HexPosition> {
      // Selecciona el mejor movimiento a partir de las posibles opciones usando BFS
     @Override
     protected Optional<HexPosition> selectBestMove(List<HexPosition> possibleMoves, 
-                                                  HexPosition currentPosition, 
-                                                  HexPosition targetPosition) {
+                                                HexPosition currentPosition, 
+                                                HexPosition targetPosition) {
         // TODO: Usar BFS para encontrar el mejor movimiento
         // 1. Ejecutar BFS desde cada posible movimiento
         // 2. Evaluar cuál lleva más rápido al objetivo
@@ -150,10 +150,11 @@ public class BFSCatMovement extends CatMovementStrategy<HexPosition> {
         HexPosition current = goal;
 
         while (!current.equals(start)) {
-            path.addFirst(current);
+            path.add(current);
             current = parentMap.get(current);
         }
 
+        Collections.reverse(path);
         return path; // El camino no incluye el nodo de inicio explícitamente
     }
     

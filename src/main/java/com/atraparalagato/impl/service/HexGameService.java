@@ -52,7 +52,7 @@ public class HexGameService extends GameService<HexPosition> {
 	 */
 	public HexGameState createGame(int boardSize, String difficulty, Map<String, Object> options) {
 		if (boardSize <= 2) boardSize = 3;
-
+		
 		
 		String gameId = UUID.randomUUID().toString();
 		HexGameState gameState = new HexGameState(gameId, boardSize);
