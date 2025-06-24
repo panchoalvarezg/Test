@@ -93,4 +93,14 @@ public class HexPosition extends Position {
     public String toString() {
         return String.format("HexPosition(q=%d, r=%d, s=%d)", q, r, getS());
     }
+
+    // Verifica si la posición está en cierta profundidad ("anillo" desde el centro)
+    public boolean isAtDepth(int depth) {
+        return (q + r + getS()) == 2 * depth;
+    }
+
+    // Verifica si la posición está en el borde del mapa (en el "anillo" más grande)
+    public boolean isAtBorder(int boardSize) {
+        return isAtDepth(boardSize);
+    }
 } 
