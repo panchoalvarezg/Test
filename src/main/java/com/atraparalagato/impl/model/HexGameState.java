@@ -29,15 +29,15 @@ public class HexGameState extends GameState<HexPosition> {
 	private HexPosition catPosition;
 	private HexGameBoard gameBoard;
 	private int boardSize; //TODO: [REVISAR SI AÑADO final DE VUELTA O NO (DEPENDERÁ DEL USO DE restoreFromSerializable)]
-	
+	private Difficulties difficulty;
+
 	// TODO: [AGREGAR ESTOS EXTRAS E INICIALIZARLOS EN EL CONSTRUCTOR]
 
 	// private int gameTime;
-	private enum Difficulties {
+	public enum Difficulties {
 		EASY,
 		HARD
-	};
-	private Difficulties difficulty;
+	}
 	
 	// Constructor de HexGameState
 	public HexGameState(String gameId, int boardSize) {
@@ -209,6 +209,11 @@ public class HexGameState extends GameState<HexPosition> {
 	// TODO: [REVISAR SI ESTA FUNCIÓN SE QUEDA O SE VA (DEPENDE DE SI boardSize VOLVERÁ A SER final O NO)]
 	public void setBoardSize(int newBoardSize) {
 		boardSize = newBoardSize;
+	}
+	
+	// Actualiza la dificultad
+	public void setDifficulty(String newDifficulty) {
+		difficulty = Difficulties.valueOf(newDifficulty);
 	}
 	
 	// TODO: Los estudiantes pueden agregar más métodos según necesiten [MAYBE AGREGAR PARA DIFFICULTY Y TIMEELAPSED]

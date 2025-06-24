@@ -49,7 +49,6 @@ public class H2GameRepository extends DataRepository<HexGameState, String> {
 		
 		// TODO: Inicializar conexión a H2 y crear tablas si no existen
 		// Pista: Usar spring.datasource.url configurado en application.properties
-		throw new UnsupportedOperationException("Los estudiantes deben implementar el constructor");
 	}
 
 	// Inicializa la tabla de la base de datos H2 con el formato de gameId como llave primaria y un JSON con toda la data de la partida
@@ -64,7 +63,7 @@ public class H2GameRepository extends DataRepository<HexGameState, String> {
 
 		try {
 			Statement statement = connection.createStatement();
-			statement.executeQuery(query);
+			statement.executeUpdate(query);
 		} catch (SQLException error) {
 			error.printStackTrace();
 			throw new RuntimeException("Error al inicializar la base de datos H2", error);
