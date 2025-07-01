@@ -22,4 +22,9 @@ public class AStarCatMovement extends CatMovementStrategy<HexPosition> {
     public List<HexPosition> getFullPath(HexPosition from, HexPosition to) {
         return List.of(); // aún no implementado
     }
+
+    @Override
+    public boolean hasPathToGoal(HexPosition from) {
+        return !board.getAdjacentPositions(from).isEmpty();
+    }
 }
