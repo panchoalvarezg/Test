@@ -10,8 +10,9 @@ public class H2GameRepository implements DataRepository<HexGameState, String> {
     private final Map<String, HexGameState> storage = new HashMap<>();
 
     @Override
-    public void save(HexGameState state) {
+    public HexGameState save(HexGameState state) {
         storage.put(state.getGameId(), state);
+        return state;
     }
 
     @Override
@@ -25,25 +26,7 @@ public class H2GameRepository implements DataRepository<HexGameState, String> {
     }
 
     @Override
-    public List<HexGameState> findWhere(Predicate<HexGameState> condition) {
-        List<HexGameState> result = new ArrayList<>();
-        for (HexGameState state : storage.values()) {
-            if (condition.test(state)) result.add(state);
-        }
-        return result;
-    }
-
-    @Override
-    public <R> List<R> findAndTransform(Predicate<HexGameState> filter, Function<HexGameState, R> transformer) {
-        List<R> result = new ArrayList<>();
-        for (HexGameState state : storage.values()) {
-            if (filter.test(state)) result.add(transformer.apply(state));
-        }
-        return result;
-    }
-
-    @Override
-    public void executeInTransaction(Runnable action) {
-        action.run();
+    public void cleanup() {
+        storage.clear();
     }
 }
