@@ -5,7 +5,6 @@ import com.atraparalagato.base.model.GameBoard;
 
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class HexGameBoard extends GameBoard<HexPosition> {
 
@@ -13,8 +12,8 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     private final Set<HexPosition> blockedPositions = new HashSet<>();
 
     @Override
-    protected void initializeBlockedPositions() {
-        // No inicialización por defecto
+    protected Set<HexPosition> initializeBlockedPositions() {
+        return blockedPositions;
     }
 
     @Override
@@ -71,4 +70,4 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     public boolean isBlocked(HexPosition position) {
         return getAdjacentPositions(position).isEmpty();
     }
-} 
+}
