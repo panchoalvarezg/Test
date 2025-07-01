@@ -3,127 +3,100 @@ package com.atraparalagato.impl.model;
 import com.atraparalagato.base.model.GameBoard;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Implementación avanzada de un tablero hexagonal para el juego Atrapar al Gato.
+ * Implementación avanzada del tablero hexagonal para el juego Atrapar al Gato.
  * Debe ser más robusta y sofisticada que ExampleGameBoard.
  */
-public class HexGameBoard extends GameBoard {
-    private final int boardSize;
-    private final Set<HexPosition> blockedPositions;
+public class HexGameBoard extends GameBoard<HexPosition> {
 
-    public HexGameBoard(int boardSize) {
-        this.boardSize = boardSize;
-        this.blockedPositions = new HashSet<>();
-        // Puedes inicializar bloqueos predeterminados aquí si lo deseas
-    }
-
-    public int getBoardSize() {
-        return boardSize;
+    public HexGameBoard(int size) {
+        super(size);
     }
 
     @Override
-    public boolean isPositionInBounds(Object pos) {
-        if (!(pos instanceof HexPosition)) return false;
-        HexPosition p = (HexPosition) pos;
-        // El tablero es un hexágono: q y r en [0, boardSize-1], y q + r < boardSize*2-1
-        int q = p.getQ();
-        int r = p.getR();
-        return q >= 0 && r >= 0 && q < boardSize && r < boardSize
-            && (q + r) >= (boardSize / 2) && (q + r) <= (boardSize * 3 / 2);
-    }
-
-    public boolean isPositionInBounds(HexPosition p) {
-        int q = p.getQ();
-        int r = p.getR();
-        return q >= 0 && r >= 0 && q < boardSize && r < boardSize
-            && (q + r) >= (boardSize / 2) && (q + r) <= (boardSize * 3 / 2);
+    protected Set<HexPosition> initializeBlockedPositions() {
+        return new HashSet<>();
     }
 
     @Override
-    public boolean isBlocked(int q, int r) {
-        return blockedPositions.contains(new HexPosition(q, r));
-    }
-
-    public boolean isBlocked(HexPosition pos) {
-        return blockedPositions.contains(pos);
-    }
-
-    public void blockPosition(HexPosition pos) {
-        blockedPositions.add(pos);
-    }
-
-    public Set<HexPosition> getBlockedPositions() {
-        return new HashSet<>(blockedPositions);
+    protected boolean isPositionInBounds(HexPosition position) {
+        int q = position.getQ();
+        int r = position.getR();
+        int s = -q - r;
+        // Tablero hexagonal axial: q, r, s deben estar en [-radius, radius]
+        // Con size = cantidad de filas/columnas, radius = (size - 1) / 2
+        int radius = (size - 1) / 2;
+        return Math.abs(q) <= radius && Math.abs(r) <= radius && Math.abs(s) <= radius;
     }
 
     @Override
-    public List<HexPosition> getPositionsWhere(Predicate<Object> condition) {
-        List<HexPosition> positions = new ArrayList<>();
-        for (int q = 0; q < boardSize; q++) {
-            for (int r = 0; r < boardSize; r++) {
-                HexPosition p = new HexPosition(q, r);
-                if (isPositionInBounds(p) && condition.test(p)) {
-                    positions.add(p);
+    protected boolean isValidMove(HexPosition position) {
+        return isPositionInBounds(position) && !isBlocked(position);
+    }
+
+    @Override
+    protected void executeMove(HexPosition position) {
+        blockedPositions.add(position);
+    }
+
+    @Override
+    public List<HexPosition> getPositionsWhere(Predicate<HexPosition> condition) {
+        List<HexPosition> list = new ArrayList<>();
+        int radius = (size - 1) / 2;
+        for (int q = -radius; q <= radius; q++) {
+            for (int r = -radius; r <= radius; r++) {
+                int s = -q - r;
+                if (Math.abs(s) <= radius) {
+                    HexPosition pos = new HexPosition(q, r);
+                    if (condition.test(pos)) {
+                        list.add(pos);
+                    }
                 }
             }
         }
-        return positions;
+        return list;
     }
 
-    public List<HexPosition> getAdjacentPositions(HexPosition pos) {
-        // Direcciones hexagonales: [q, r] offsets
-        int[][] directions = {
-            {1, 0}, {0, 1}, {-1, 1},
-            {-1, 0}, {0, -1}, {1, -1}
+    @Override
+    public List<HexPosition> getAdjacentPositions(HexPosition position) {
+        int[][] dirs = {
+            {1, 0}, {1, -1}, {0, -1},
+            {-1, 0}, {-1, 1}, {0, 1}
         };
         List<HexPosition> adj = new ArrayList<>();
-        for (int[] dir : directions) {
-            HexPosition neighbor = new HexPosition(pos.getQ() + dir[0], pos.getR() + dir[1]);
-            if (isPositionInBounds(neighbor) && !isBlocked(neighbor)) {
-                adj.add(neighbor);
+        for (int[] d : dirs) {
+            HexPosition n = new HexPosition(position.getQ() + d[0], position.getR() + d[1]);
+            if (isPositionInBounds(n)) {
+                adj.add(n);
             }
         }
         return adj;
     }
 
+    @Override
+    public boolean isBlocked(HexPosition position) {
+        return blockedPositions.contains(position);
+    }
+
+    // Métodos utilitarios específicos
+
     public boolean isCatTrapped(HexPosition catPos) {
-        // El gato está atrapado si todas las adyacencias están bloqueadas o fuera de los límites
-        List<HexPosition> adj = getAdjacentPositionsRaw(catPos);
-        for (HexPosition n : adj) {
-            if (isPositionInBounds(n) && !isBlocked(n)) {
+        // El gato está atrapado si todas sus adyacencias están bloqueadas o fuera del tablero
+        for (HexPosition n : getAdjacentPositions(catPos)) {
+            if (!isBlocked(n)) {
                 return false;
             }
         }
         return true;
     }
 
-    private List<HexPosition> getAdjacentPositionsRaw(HexPosition pos) {
-        int[][] directions = {
-            {1, 0}, {0, 1}, {-1, 1},
-            {-1, 0}, {0, -1}, {1, -1}
-        };
-        List<HexPosition> adj = new ArrayList<>();
-        for (int[] dir : directions) {
-            HexPosition neighbor = new HexPosition(pos.getQ() + dir[0], pos.getR() + dir[1]);
-            adj.add(neighbor);
-        }
-        return adj;
-    }
-
     public boolean isAtEdge(HexPosition pos) {
-        // El gato está en el borde si q o r es 0 o boardSize-1
-        int q = pos.getQ();
-        int r = pos.getR();
-        return q == 0 || r == 0 || q == boardSize - 1 || r == boardSize - 1;
-    }
-
-    @Override
-    public String toString() {
-        return "HexGameBoard(" + boardSize + "x" + boardSize + ", blocked=" + blockedPositions.size() + ")";
+        int radius = (size - 1) / 2;
+        return Math.abs(pos.getQ()) == radius || Math.abs(pos.getR()) == radius || Math.abs(-pos.getQ() - pos.getR()) == radius;
     }
 }
