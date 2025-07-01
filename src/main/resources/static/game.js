@@ -64,12 +64,8 @@ class Game {
             this.updateStatus(gameState.status);
             this.updateMovesCount(gameState.movesCount || 0);
 
-            // MODIFICACIÓN: Si el gato NO está en el tablero, el jugador pierde
-            // Detectamos esto si en el estado del juego (gameState) hay una bandera especial,
-            // o si la posición del gato no está en bounds (depende de backend).
-            // Aquí asumimos que el backend ya devuelve el status PLAYER_LOST cuando esto ocurre,
-            // pero si no, podemos detectarlo en el frontend así:
-            if (!this.isCatInBounds(gameState.catPosition)) {
+            // NUEVO: Si el gato está en el borde, el jugador pierde
+            if (this.isCatAtBorder(gameState.catPosition)) {
                 this.updateStatus('PLAYER_LOST');
                 this.showGameOver('PLAYER_LOST');
                 return;
@@ -77,7 +73,7 @@ class Game {
 
             // También mostramos el game over si el backend ya lo indicó
             const gameEndStates = ['PLAYER_LOST', 'PLAYER_WON'];
-            const isGameOver = gameEndStates.some(state => state === gameState.status);
+            const isGameOver = gameEndStates.includes(gameState.status);
             if (isGameOver) {
                 this.showGameOver(gameState.status);
             }
@@ -86,15 +82,15 @@ class Game {
         }
     }
 
-    // NUEVO: Determina si el gato está en el tablero (hexágono axial)
-    isCatInBounds(catPosition) {
+    // NUEVO: Determina si el gato está en el borde jugable (radio visual)
+    isCatAtBorder(catPosition) {
         if (!catPosition) return false;
         const q = catPosition.q;
         const r = catPosition.r;
         const s = -q - r;
-        const radius = this.boardSize;
+        const radius = this.boardSize - 1;
         const max = Math.max(Math.abs(q), Math.abs(r), Math.abs(s));
-        return max <= radius;
+        return max === radius;
     }
 
     updateMovesCount(count) {
@@ -117,26 +113,20 @@ class Game {
 
     generateCellPositions(config) {
         const positions = [];
-        for (let q = -this.boardSize; q <= this.boardSize; q++) {
-            for (let r = -this.boardSize; r <= this.boardSize; r++) {
+        const radius = this.boardSize - 1;
+        for (let q = -radius; q <= radius; q++) {
+            for (let r = -radius; r <= radius; r++) {
                 const s = -q - r;
-                if (Math.abs(s) <= this.boardSize) {
+                if (Math.max(Math.abs(q), Math.abs(r), Math.abs(s)) <= radius) {
                     const x = config.centerX + config.hexSize * (3/2 * q);
                     const y = config.centerY + config.hexSize * (Math.sqrt(3)/2 * q + Math.sqrt(3) * r);
-                    const isBorder = Math.abs(q) === this.boardSize ||
-                        Math.abs(r) === this.boardSize ||
-                        Math.abs(s) === this.boardSize;
+                    const isBorder = Math.max(Math.abs(q), Math.abs(r), Math.abs(s)) === radius;
                     const type = isBorder ? 'border' : 'playable';
                     positions.push({ q, r, x, y, type });
                 }
             }
         }
         return positions;
-    }
-
-    isValidHexPosition(q, r) {
-        const s = -q - r;
-        return Math.abs(q) < this.boardSize && Math.abs(r) < this.boardSize && Math.abs(s) < this.boardSize;
     }
 
     createHexCell(position, gameState, config) {
