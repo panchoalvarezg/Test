@@ -1,10 +1,15 @@
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameState;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Estado del juego: el gato solo escapa si su posición está fuera del tablero;
+ * no hay borde artificial, sino el "hexágono completo".
+ */
 public class HexGameState extends GameState<HexPosition> {
     private final HexGameBoard board;
     private HexPosition catPosition;
@@ -19,13 +24,13 @@ public class HexGameState extends GameState<HexPosition> {
 
     @Override
     protected boolean canExecuteMove(HexPosition position) {
-        // Solo permite si la casilla está dentro de los límites y no está bloqueada y el juego no terminó
+        // Solo permite si la casilla está dentro de los límites, no está bloqueada y el juego no terminó
         return !isGameFinished() && board.isValidMove(position);
     }
 
     @Override
     protected boolean performMove(HexPosition position) {
-        // Bloquea la casilla elegida por el jugador
+        // Bloquear la casilla elegida por el jugador
         board.executeMove(position);
 
         // Mueve el gato automáticamente después del bloqueo
@@ -33,16 +38,13 @@ public class HexGameState extends GameState<HexPosition> {
         if (nextCatPos != null) {
             setCatPosition(nextCatPos);
         }
-        // Actualiza el estado del juego después de mover el gato
-        updateGameStatus();
         // Retorna true para indicar que la jugada fue válida
         return true;
     }
 
     /**
-     * Elige el movimiento del gato:
-     * Estrategia simple: mueve a la primera adyacente libre.
-     * Puedes mejorar esto con BFS para encontrar la ruta más corta al borde.
+     * Movimiento simple: mueve a la primera adyacente libre, si existe.
+     * Si no hay ninguna adyacente dentro del tablero, el gato escapará (posición fuera de bounds tras el movimiento).
      */
     private HexPosition chooseCatMove() {
         List<HexPosition> adj = board.getAdjacentPositions(catPosition);
@@ -51,14 +53,14 @@ public class HexGameState extends GameState<HexPosition> {
                 return neighbor;
             }
         }
-        // Si no hay adyacentes libres, el gato está atrapado
+        // Si no hay adyacentes libres, el gato está atrapado (no se mueve)
         return null;
     }
 
     @Override
     protected void updateGameStatus() {
-        // PRIMERO revisa si el gato llegó al borde. Solo pierdes si el gato está en el borde.
-        if (board.isAtEdge(catPosition)) {
+        // El gato escapa solo si sale completamente del tablero (posición fuera de bounds)
+        if (!board.isPositionInBounds(catPosition)) {
             setStatus(GameStatus.PLAYER_LOST);
         } else if (board.isCatTrapped(catPosition)) {
             setStatus(GameStatus.PLAYER_WON);
