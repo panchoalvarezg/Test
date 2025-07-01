@@ -1,83 +1,104 @@
-package com.atraparalagato.impl.strategy;
+package com.atraparalagato.impl.repository;
 
-import com.atraparalagato.base.strategy.CatMovementStrategy;
-import com.atraparalagato.impl.model.HexPosition;
-import com.atraparalagato.impl.model.HexGameBoard;
-
+import com.atraparalagato.base.repository.DataRepository;
+import com.atraparalagato.impl.model.HexGameState;
 import java.util.*;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class AStarCatMovement extends CatMovementStrategy<HexPosition> {
+public class H2GameRepository extends DataRepository<HexGameState, String> {
 
-    public AStarCatMovement(HexGameBoard board) {
-        super(board);
+    private final Map<String, HexGameState> storage = new HashMap<>();
+
+    @Override
+    public HexGameState save(HexGameState entity) {
+        storage.put(entity.getGameId(), entity);
+        return entity;
     }
 
     @Override
-    protected List<HexPosition> getPossibleMoves(HexPosition currentPosition) {
-        HexGameBoard hexBoard = (HexGameBoard) board;
-        List<HexPosition> moves = new ArrayList<>();
-        for (HexPosition neighbor : hexBoard.getAdjacentPositions(currentPosition)) {
-            if (!hexBoard.isBlocked(neighbor)) {
-                moves.add(neighbor);
-            }
+    public Optional<HexGameState> findById(String id) {
+        return Optional.ofNullable(storage.get(id));
+    }
+
+    @Override
+    public List<HexGameState> findAll() {
+        return new ArrayList<>(storage.values());
+    }
+
+    @Override
+    public List<HexGameState> findWhere(Predicate<HexGameState> condition) {
+        List<HexGameState> result = new ArrayList<>();
+        for (HexGameState state : storage.values()) {
+            if (condition.test(state)) result.add(state);
         }
-        return moves;
+        return result;
     }
 
     @Override
-    protected Optional<HexPosition> selectBestMove(List<HexPosition> possibleMoves, HexPosition currentPosition, HexPosition targetPosition) {
-        if (possibleMoves.isEmpty()) return Optional.empty();
-        Function<HexPosition, Double> heuristic = getHeuristicFunction(targetPosition);
-        return possibleMoves.stream().min(Comparator.comparingDouble(heuristic::apply));
-    }
-
-    @Override
-    protected Function<HexPosition, Double> getHeuristicFunction(HexPosition targetPosition) {
-        return pos -> pos.distanceTo(targetPosition);
-    }
-
-    @Override
-    protected Predicate<HexPosition> getGoalPredicate() {
-        HexGameBoard hexBoard = (HexGameBoard) board;
-        int n = hexBoard.getSize();
-        return pos -> pos.getQ() == 0 || pos.getQ() == n-1 || pos.getR() == 0 || pos.getR() == n-1;
-    }
-
-    @Override
-    protected double getMoveCost(HexPosition from, HexPosition to) {
-        return 1.0;
-    }
-
-    @Override
-    public boolean hasPathToGoal(HexPosition currentPosition) {
-        Set<HexPosition> visited = new HashSet<>();
-        Queue<HexPosition> queue = new LinkedList<>();
-        queue.add(currentPosition);
-        Predicate<HexPosition> isGoal = getGoalPredicate();
-        HexGameBoard hexBoard = (HexGameBoard) board;
-
-        while (!queue.isEmpty()) {
-            HexPosition pos = queue.poll();
-            if (isGoal.test(pos)) return true;
-            visited.add(pos);
-            for (HexPosition neighbor : hexBoard.getAdjacentPositions(pos)) {
-                if (!visited.contains(neighbor) && !hexBoard.isBlocked(neighbor)) {
-                    queue.add(neighbor);
-                }
-            }
+    public <R> List<R> findAndTransform(Predicate<HexGameState> condition, Function<HexGameState, R> transformer) {
+        List<R> result = new ArrayList<>();
+        for (HexGameState state : storage.values()) {
+            if (condition.test(state)) result.add(transformer.apply(state));
         }
-        return false;
+        return result;
     }
 
     @Override
-    public List<HexPosition> getFullPath(HexPosition currentPosition, HexPosition targetPosition) {
-        List<HexPosition> path = new ArrayList<>();
-        path.add(currentPosition);
-        if (currentPosition.equals(targetPosition)) return path;
-        // Implementar A* real si lo necesitas
-        return path;
+    public long countWhere(Predicate<HexGameState> condition) {
+        return storage.values().stream().filter(condition).count();
+    }
+
+    @Override
+    public boolean deleteById(String id) {
+        return storage.remove(id) != null;
+    }
+
+    @Override
+    public long deleteWhere(Predicate<HexGameState> condition) {
+        long initialSize = storage.size();
+        storage.values().removeIf(condition);
+        return initialSize - storage.size();
+    }
+
+    @Override
+    public boolean existsById(String id) {
+        return storage.containsKey(id);
+    }
+
+    @Override
+    public <R> R executeInTransaction(Function<DataRepository<HexGameState, String>, R> operation) {
+        return operation.apply(this);
+    }
+
+    @Override
+    public List<HexGameState> findWithPagination(int page, int size) {
+        List<HexGameState> all = findAll();
+        int fromIndex = Math.min(page * size, all.size());
+        int toIndex = Math.min(fromIndex + size, all.size());
+        return all.subList(fromIndex, toIndex);
+    }
+
+    @Override
+    public List<HexGameState> findAllSorted(Function<HexGameState, ? extends Comparable<?>> sortKeyExtractor, boolean ascending) {
+        List<HexGameState> all = findAll();
+        all.sort((o1, o2) -> {
+            int cmp = sortKeyExtractor.apply(o1).compareTo(sortKeyExtractor.apply(o2));
+            return ascending ? cmp : -cmp;
+        });
+        return all;
+    }
+
+    @Override
+    public <R> List<R> executeCustomQuery(String query, Function<Object, R> resultMapper) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    protected void initialize() {}
+
+    @Override
+    protected void cleanup() {
+        storage.clear();
     }
 }
