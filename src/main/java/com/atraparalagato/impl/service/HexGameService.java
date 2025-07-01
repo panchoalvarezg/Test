@@ -32,14 +32,14 @@ public class HexGameService {
     }
 
     public void catMove() {
+        // Lógica de movimiento del gato sin acceso a getGoalPredicate()
         Optional<HexPosition> best = catStrategy.findBestMove(
                 currentState.getCatPosition(),
-                catStrategy.getGoalPredicate().test(currentState.getCatPosition()) ? currentState.getCatPosition() : null
+                null
         );
         best.ifPresent(newPos -> {
             currentState.setCatPosition(newPos);
-            // La actualización del estado del juego está protegida, pero asumiendo que hay forma pública:
-            // currentState.updateGameStatus();
+            // Si necesitas actualizar el estado del juego, hazlo aquí.
         });
     }
 
