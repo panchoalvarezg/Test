@@ -1,59 +1,49 @@
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameState;
-import com.atraparalagato.base.model.GameBoard;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Estado avanzado del juego para el tablero hexagonal.
  * Debe ser más robusto y sofisticado que ExampleGameState.
  */
-public class HexGameState extends GameState {
-    private final String gameId;
-    private GameStatus status;
+public class HexGameState extends GameState<HexPosition> {
+    private HexGameBoard board;
     private HexPosition catPosition;
-    private final HexGameBoard gameBoard;
-    private int moveCount;
-    private int boardSize;
     private int score;
 
-    public enum GameStatus {
-        IN_PROGRESS,
-        PLAYER_WON,
-        CAT_ESCAPED
-    }
-
-    public HexGameState(int boardSize) {
-        this.gameId = UUID.randomUUID().toString();
-        this.status = GameStatus.IN_PROGRESS;
-        this.boardSize = boardSize;
-        this.gameBoard = new HexGameBoard(boardSize);
-        this.catPosition = new HexPosition(boardSize / 2, boardSize / 2);
-        this.moveCount = 0;
+    public HexGameState(String gameId, HexGameBoard board, HexPosition catPosition) {
+        super(gameId);
+        this.board = board;
+        this.catPosition = catPosition;
         this.score = 0;
     }
 
-    public HexGameState(String gameId, GameStatus status, int boardSize, HexGameBoard board, HexPosition catPosition, int moveCount, int score) {
-        this.gameId = gameId;
-        this.status = status;
-        this.boardSize = boardSize;
-        this.gameBoard = board;
-        this.catPosition = catPosition;
-        this.moveCount = moveCount;
-        this.score = score;
+    @Override
+    protected boolean canExecuteMove(HexPosition position) {
+        return !isGameFinished() && board.isValidMove(position);
     }
 
     @Override
-    public String getGameId() {
-        return gameId;
+    protected boolean performMove(HexPosition position) {
+        if (canExecuteMove(position)) {
+            board.executeMove(position);
+            return true;
+        }
+        return false;
     }
 
     @Override
-    public HexGameBoard getGameBoard() {
-        return gameBoard;
+    protected void updateGameStatus() {
+        if (board.isCatTrapped(catPosition)) {
+            setStatus(GameStatus.PLAYER_WON);
+        } else if (board.isAtEdge(catPosition)) {
+            setStatus(GameStatus.PLAYER_LOST);
+        } else {
+            setStatus(GameStatus.IN_PROGRESS);
+        }
     }
 
     @Override
@@ -61,22 +51,14 @@ public class HexGameState extends GameState {
         return catPosition;
     }
 
-    public void setCatPosition(HexPosition catPosition) {
-        this.catPosition = catPosition;
-    }
-
     @Override
-    public int getMoveCount() {
-        return moveCount;
-    }
-
-    public void incrementMoveCount() {
-        moveCount++;
+    public void setCatPosition(HexPosition position) {
+        this.catPosition = position;
     }
 
     @Override
     public boolean isGameFinished() {
-        return status == GameStatus.PLAYER_WON || status == GameStatus.CAT_ESCAPED;
+        return status == GameStatus.PLAYER_WON || status == GameStatus.PLAYER_LOST;
     }
 
     @Override
@@ -85,44 +67,10 @@ public class HexGameState extends GameState {
     }
 
     @Override
-    public void updateGameStatus() {
-        if (gameBoard.isCatTrapped(catPosition)) {
-            status = GameStatus.PLAYER_WON;
-            calculateScore();
-        } else if (gameBoard.isAtEdge(catPosition)) {
-            status = GameStatus.CAT_ESCAPED;
-        } else {
-            status = GameStatus.IN_PROGRESS;
-        }
-    }
-
-    @Override
-    public void performMove(Object move) {
-        if (!(move instanceof HexPosition)) {
-            throw new IllegalArgumentException("Move must be a HexPosition");
-        }
-        HexPosition pos = (HexPosition) move;
-        if (canExecuteMove(pos)) {
-            gameBoard.blockPosition(pos);
-            incrementMoveCount();
-            updateGameStatus();
-        } else {
-            throw new IllegalArgumentException("Invalid move");
-        }
-    }
-
-    @Override
-    public boolean canExecuteMove(Object move) {
-        if (!(move instanceof HexPosition)) return false;
-        HexPosition pos = (HexPosition) move;
-        return gameBoard.isPositionInBounds(pos) && !gameBoard.isBlocked(pos.getQ(), pos.getR());
-    }
-
-    @Override
     public int calculateScore() {
-        // Ejemplo: mayor score si el gato es atrapado en menos movimientos
+        // Ejemplo simple: más puntos si atrapas al gato en menos movimientos.
         if (status == GameStatus.PLAYER_WON) {
-            this.score = Math.max(100 - moveCount * 5, 10);
+            this.score = Math.max(100 - getMoveCount() * 5, 10);
         } else {
             this.score = 0;
         }
@@ -130,22 +78,26 @@ public class HexGameState extends GameState {
     }
 
     @Override
-    public Map<String, Object> getSerializableState() {
+    public Object getSerializableState() {
         Map<String, Object> map = new HashMap<>();
-        map.put("gameId", gameId);
-        map.put("status", status.name());
+        map.put("gameId", getGameId());
+        map.put("status", getStatus().name());
         if (catPosition != null) {
             map.put("catPosition", Map.of("q", catPosition.getQ(), "r", catPosition.getR()));
         } else {
             map.put("catPosition", null);
         }
-        map.put("blockedCells", gameBoard.getBlockedPositions());
-        map.put("movesCount", moveCount);
-        map.put("boardSize", boardSize);
+        map.put("blockedCells", board.getBlockedPositions());
+        map.put("movesCount", getMoveCount());
+        map.put("boardSize", board.getSize());
         map.put("score", score);
         map.put("implementation", "impl");
         return map;
     }
 
-    // Puedes agregar métodos auxiliares según tus necesidades
+    @Override
+    public void restoreFromSerializable(Object serializedState) {
+        // Implementar restauración desde el objeto serializado según formato guardado
+        // Puedes dejarlo como TODO si aún no lo necesitas
+    }
 }
