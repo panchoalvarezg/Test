@@ -1,30 +1,26 @@
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameBoard;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class HexGameBoard extends GameBoard<HexPosition> {
 
-    private final Set<HexPosition> blockedPositions;
-
     public HexGameBoard(int size) {
         super(size);
-        this.blockedPositions = new LinkedHashSet<>();
     }
 
     @Override
     protected Set<HexPosition> initializeBlockedPositions() {
-        return blockedPositions;
+        // Devuelve una colección vacía nueva para los bloqueos iniciales
+        return new java.util.LinkedHashSet<>();
     }
 
     @Override
     public boolean isBlocked(HexPosition position) {
-        return blockedPositions.contains(position);
+        return getBlockedPositions().contains(position);
     }
 
     @Override
@@ -43,7 +39,7 @@ public class HexGameBoard extends GameBoard<HexPosition> {
 
     @Override
     protected void executeMove(HexPosition position) {
-        blockedPositions.add(position);
+        getBlockedPositions().add(position);
     }
 
     @Override
@@ -66,9 +62,6 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         return neighbors;
     }
 
-    /**
-     * Retorna true si el gato está en el borde del tablero.
-     */
     public boolean isAtEdge(HexPosition pos) {
         int border = getSize() - 1;
         int q = pos.getQ();
@@ -77,9 +70,6 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         return Math.abs(q) == border || Math.abs(r) == border || Math.abs(s) == border;
     }
 
-    /**
-     * Retorna true si el gato está completamente atrapado (todas las adyacentes bloqueadas o fuera de rango).
-     */
     public boolean isCatTrapped(HexPosition catPos) {
         for (HexPosition neighbor : getAdjacentPositions(catPos)) {
             if (!isBlocked(neighbor)) {
@@ -89,10 +79,8 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         return true;
     }
 
-    // IMPLEMENTACIÓN REQUERIDA POR LA BASE
     @Override
     public List<HexPosition> getPositionsWhere(Predicate<HexPosition> predicate) {
-        // Devuelve todas las posiciones del tablero que cumplen el predicado
         List<HexPosition> result = new ArrayList<>();
         int border = getSize() - 1;
         for (int q = -border; q <= border; q++) {
@@ -107,13 +95,5 @@ public class HexGameBoard extends GameBoard<HexPosition> {
             }
         }
         return result;
-    }
-
-    // El método getBlockedPositions() es FINAL en la clase base, así que NO lo sobreescribas.
-    // Usa el método de la clase base cuando lo necesites.
-
-    public void setBlockedPositions(Set<HexPosition> blocked) {
-        blockedPositions.clear();
-        blockedPositions.addAll(blocked);
     }
 }
