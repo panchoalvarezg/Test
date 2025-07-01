@@ -77,7 +77,7 @@ public class HexGameState extends GameState<HexPosition> {
     public Object getSerializableState() {
         Map<String, Object> state = new HashMap<>();
         state.put("cat", catPosition);
-        state.put("blocked", new ArrayList<>(board.blockedPositions));
+        state.put("blocked", new ArrayList<>(board.getBlockedPositionsPublic()));
         state.put("status", getStatus());
         state.put("moveCount", getMoveCount());
         return state;
@@ -90,7 +90,7 @@ public class HexGameState extends GameState<HexPosition> {
         this.catPosition = (HexPosition) map.get("cat");
         this.playerWon = GameStatus.PLAYER_WON.equals(map.get("status"));
         this.moveCount = (Integer) map.getOrDefault("moveCount", 0);
-        board.blockedPositions.clear();
-        board.blockedPositions.addAll((Collection<HexPosition>) map.get("blocked"));
+        Collection<HexPosition> blocked = (Collection<HexPosition>) map.get("blocked");
+        board.setBlockedPositions(blocked);
     }
 }
