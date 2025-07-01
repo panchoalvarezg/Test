@@ -1,3 +1,4 @@
+// HexGameService.java
 package com.atraparalagato.impl.service;
 
 import com.atraparalagato.base.service.GameService;
@@ -7,16 +8,16 @@ import com.atraparalagato.impl.strategy.AStarCatMovement;
 public class HexGameService extends GameService<HexPosition> {
 
     private HexGameState gameState;
+    private AStarCatMovement catMovement;
 
     @Override
     public void initializeGame() {
         HexGameBoard board = new HexGameBoard();
-        HexPosition initialCatPosition = new HexPosition(5, 5); // centro del tablero
-        this.gameState = new HexGameState(board, initialCatPosition);
-
-        this.catMovement = new AStarCatMovement(); // estrategia inicial
-        this.catMovement.setBoard(board);
-        this.catMovement.setGameState(gameState);
+        HexPosition catPos = new HexPosition(5, 5);
+        this.gameState = new HexGameState(board, catPos);
+        this.catMovement = new AStarCatMovement();
+        catMovement.setBoard(board);
+        catMovement.setGameState(gameState);
     }
 
     @Override
@@ -25,19 +26,18 @@ public class HexGameService extends GameService<HexPosition> {
     }
 
     @Override
-    public HexPosition getTargetPosition() {
+    public HexPosition getSuggestedMove(String playerId) {
         return catMovement.selectBestMove(gameState.getCatPosition());
-    }
-
-    @Override
-    public void moveCat(HexPosition position) {
-        gameState.setCatPosition(position);
-        gameState.updateGameStatus();
     }
 
     @Override
     public void executePlayerMove(HexPosition position) {
         gameState.performMove(position);
+    }
+
+    @Override
+    public void moveCat(HexPosition newPosition) {
+        gameState.setCatPosition(newPosition);
         gameState.updateGameStatus();
     }
 
