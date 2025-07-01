@@ -1,59 +1,95 @@
 package com.atraparalagato.impl.model;
 
-import com.atraparalagato.base.model.GameBoard;
+import com.atraparalagato.base.model.GameState;
 import java.util.*;
-import java.util.function.Predicate;
 
-public class HexGameBoard extends GameBoard<HexPosition> {
+public class HexGameState extends GameState<HexPosition> {
 
-    public HexGameBoard(int size) {
-        super(size);
+    private HexPosition catPosition;
+    private final HexGameBoard board;
+    private boolean playerWon;
+
+    public HexGameState(String gameId, HexGameBoard board, HexPosition catStart) {
+        super(gameId);
+        this.board = board;
+        this.catPosition = catStart;
+        this.playerWon = false;
+    }
+
+    public HexGameBoard getBoard() {
+        return board;
     }
 
     @Override
-    protected Set<HexPosition> initializeBlockedPositions() {
-        return new HashSet<>();
+    protected boolean canExecuteMove(HexPosition pos) {
+        return board.isValidMove(pos) && !pos.equals(catPosition);
     }
 
     @Override
-    protected boolean isPositionInBounds(HexPosition pos) {
-        return pos.isWithinBounds(getSize());
+    protected boolean performMove(HexPosition pos) {
+        if (!canExecuteMove(pos)) return false;
+        board.executeMove(pos);
+        return true;
     }
 
     @Override
-    protected boolean isValidMove(HexPosition pos) {
-        return isPositionInBounds(pos) && !isBlocked(pos);
-    }
-
-    @Override
-    protected void executeMove(HexPosition pos) {
-        blockedPositions.add(pos);
-    }
-
-    @Override
-    public List<HexPosition> getPositionsWhere(Predicate<HexPosition> condition) {
-        List<HexPosition> positions = new ArrayList<>();
-        for (int q = 0; q < getSize(); q++) {
-            for (int r = 0; r < getSize(); r++) {
-                HexPosition pos = new HexPosition(q, r);
-                if (condition.test(pos)) positions.add(pos);
-            }
+    protected void updateGameStatus() {
+        if (isCatAtEdge()) {
+            setStatus(GameStatus.PLAYER_LOST);
+        } else if (board.getAdjacentPositions(catPosition).stream().allMatch(board::isBlocked)) {
+            setStatus(GameStatus.PLAYER_WON);
+            playerWon = true;
         }
-        return positions;
+    }
+
+    private boolean isCatAtEdge() {
+        int n = board.getSize();
+        int q = catPosition.getQ(), r = catPosition.getR();
+        return q == 0 || r == 0 || q == n-1 || r == n-1;
     }
 
     @Override
-    public List<HexPosition> getAdjacentPositions(HexPosition pos) {
-        List<HexPosition> result = new ArrayList<>();
-        for (HexPosition dir : HexPosition.DIRECTIONS) {
-            HexPosition neighbor = (HexPosition) pos.add(dir);
-            if (isPositionInBounds(neighbor)) result.add(neighbor);
-        }
-        return result;
+    public HexPosition getCatPosition() {
+        return catPosition;
     }
 
     @Override
-    public boolean isBlocked(HexPosition pos) {
-        return blockedPositions.contains(pos);
+    public void setCatPosition(HexPosition pos) {
+        this.catPosition = pos;
+    }
+
+    @Override
+    public boolean isGameFinished() {
+        return getStatus() == GameStatus.PLAYER_LOST || getStatus() == GameStatus.PLAYER_WON;
+    }
+
+    @Override
+    public boolean hasPlayerWon() {
+        return playerWon;
+    }
+
+    @Override
+    public int calculateScore() {
+        return playerWon ? 200 - getMoveCount() * 8 : 100 - getMoveCount() * 5;
+    }
+
+    @Override
+    public Object getSerializableState() {
+        Map<String, Object> state = new HashMap<>();
+        state.put("cat", catPosition);
+        state.put("blocked", new ArrayList<>(board.getBlockedPositions()));
+        state.put("status", getStatus());
+        state.put("moveCount", getMoveCount());
+        return state;
+    }
+
+    @Override
+    public void restoreFromSerializable(Object serializedState) {
+        if (!(serializedState instanceof Map map)) return;
+        this.catPosition = (HexPosition) map.get("cat");
+        this.playerWon = GameStatus.PLAYER_WON.equals(map.get("status"));
+        this.moveCount = (Integer) map.getOrDefault("moveCount", 0);
+        board.blockedPositions.clear();
+        board.blockedPositions.addAll((Collection<HexPosition>) map.get("blocked"));
     }
 }
