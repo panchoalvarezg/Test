@@ -1,117 +1,125 @@
 package com.atraparalagato.impl.model;
 
-import com.atraparalagato.base.model.GameBoard;
+import com.atraparalagato.base.model.GameState;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.ArrayList;
+import java.util.Map;
 
 /**
- * Tablero hexagonal axial con área jugable restringida:
- * - Solo se pueden bloquear celdas del anillo central y del anillo de borde "válido" (radius-1).
- * - El anillo más externo (radius) es decorativo: ni se puede bloquear ni el gato puede escapar por ahí.
+ * Estado del juego: el gato solo escapa si su posición está fuera del tablero;
+ * no hay borde artificial, sino el "hexágono completo".
  */
-public class HexGameBoard extends GameBoard<HexPosition> {
+public class HexGameState extends GameState<HexPosition> {
+    private final HexGameBoard board;
+    private HexPosition catPosition;
+    private int score;
 
-    public HexGameBoard(int size) {
-        super(size);
+    public HexGameState(String gameId, HexGameBoard board, HexPosition catPosition) {
+        super(gameId);
+        this.board = board;
+        this.catPosition = catPosition;
+        this.score = 0;
     }
 
     @Override
-    protected Set<HexPosition> initializeBlockedPositions() {
-        return new HashSet<>();
-    }
-
-    /**
-     * Solo permite bloquear y jugar en celdas dentro del anillo central y el anillo de borde válido (radius-1).
-     * El anillo más exterior (radius) NO es jugable ni bloqueable.
-     */
-    @Override
-    protected boolean isPositionInBounds(HexPosition position) {
-        int q = position.getQ();
-        int r = position.getR();
-        int s = -q - r;
-        int radius = (size - 1) / 2;
-        int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
-        // Solo jugables las celdas donde max <= radius-1
-        return max <= radius - 1;
+    protected boolean canExecuteMove(HexPosition position) {
+        // Solo permite si la casilla está dentro de los límites, no está bloqueada y el juego no terminó
+        return !isGameFinished() && board.isValidMove(position);
     }
 
     @Override
-    protected boolean isValidMove(HexPosition position) {
-        return isPositionInBounds(position) && !isBlocked(position);
-    }
+    protected boolean performMove(HexPosition position) {
+        // Bloquear la casilla elegida por el jugador
+        board.executeMove(position);
 
-    @Override
-    protected void executeMove(HexPosition position) {
-        blockedPositions.add(position);
-    }
-
-    @Override
-    public List<HexPosition> getPositionsWhere(Predicate<HexPosition> condition) {
-        List<HexPosition> list = new ArrayList<>();
-        int radius = (size - 1) / 2;
-        for (int q = -radius; q <= radius; q++) {
-            for (int r = -radius; r <= radius; r++) {
-                int s = -q - r;
-                int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
-                // Solo celdas jugables (no las decorativas exterior ni fuera del hexágono)
-                if (max <= radius - 1) {
-                    HexPosition pos = new HexPosition(q, r);
-                    if (condition.test(pos)) {
-                        list.add(pos);
-                    }
-                }
-            }
+        // Mueve el gato automáticamente después del bloqueo
+        HexPosition nextCatPos = chooseCatMove();
+        if (nextCatPos != null) {
+            setCatPosition(nextCatPos);
         }
-        return list;
-    }
-
-    @Override
-    public List<HexPosition> getAdjacentPositions(HexPosition position) {
-        int[][] dirs = {
-            {1, 0}, {1, -1}, {0, -1},
-            {-1, 0}, {-1, 1}, {0, 1}
-        };
-        List<HexPosition> adj = new ArrayList<>();
-        for (int[] d : dirs) {
-            HexPosition n = new HexPosition(position.getQ() + d[0], position.getR() + d[1]);
-            if (isPositionInBounds(n)) {
-                adj.add(n);
-            }
-        }
-        return adj;
-    }
-
-    @Override
-    public boolean isBlocked(HexPosition position) {
-        return blockedPositions.contains(position);
-    }
-
-    /**
-     * El gato está atrapado si todas las adyacentes jugables están bloqueadas.
-     */
-    public boolean isCatTrapped(HexPosition catPos) {
-        for (HexPosition n : getAdjacentPositions(catPos)) {
-            if (!isBlocked(n)) {
-                return false;
-            }
-        }
+        // Retorna true para indicar que la jugada fue válida
         return true;
     }
 
     /**
-     * El borde válido es el anillo de radio radius-1.
-     * El anillo más exterior (radius) es decorativo y no es considerado borde para escape.
+     * Movimiento simple: mueve a la primera adyacente libre, si existe.
+     * Si no hay ninguna adyacente dentro del tablero, el gato escapará (posición fuera de bounds tras el movimiento).
      */
-    public boolean isAtEdge(HexPosition pos) {
-        int q = pos.getQ();
-        int r = pos.getR();
-        int s = -q - r;
-        int radius = (size - 1) / 2;
-        int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
-        return max == radius - 1;
+    private HexPosition chooseCatMove() {
+        List<HexPosition> adj = board.getAdjacentPositions(catPosition);
+        for (HexPosition neighbor : adj) {
+            if (!board.isBlocked(neighbor)) {
+                return neighbor;
+            }
+        }
+        // Si no hay adyacentes libres, el gato está atrapado (no se mueve)
+        return null;
+    }
+
+    @Override
+    protected void updateGameStatus() {
+        // El gato escapa solo si sale completamente del tablero (posición fuera de bounds)
+        if (!board.isPositionInBounds(catPosition)) {
+            setStatus(GameStatus.PLAYER_LOST);
+        } else if (board.isCatTrapped(catPosition)) {
+            setStatus(GameStatus.PLAYER_WON);
+        } else {
+            setStatus(GameStatus.IN_PROGRESS);
+        }
+    }
+
+    @Override
+    public HexPosition getCatPosition() {
+        return catPosition;
+    }
+
+    @Override
+    public void setCatPosition(HexPosition position) {
+        this.catPosition = position;
+    }
+
+    @Override
+    public boolean isGameFinished() {
+        return status == GameStatus.PLAYER_WON || status == GameStatus.PLAYER_LOST;
+    }
+
+    @Override
+    public boolean hasPlayerWon() {
+        return status == GameStatus.PLAYER_WON;
+    }
+
+    @Override
+    public int calculateScore() {
+        // Ejemplo simple: más puntos si atrapas al gato en menos movimientos.
+        if (status == GameStatus.PLAYER_WON) {
+            this.score = Math.max(100 - getMoveCount() * 5, 10);
+        } else {
+            this.score = 0;
+        }
+        return this.score;
+    }
+
+    @Override
+    public Object getSerializableState() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("gameId", getGameId());
+        map.put("status", getStatus().name());
+        if (catPosition != null) {
+            map.put("catPosition", Map.of("q", catPosition.getQ(), "r", catPosition.getR()));
+        } else {
+            map.put("catPosition", null);
+        }
+        map.put("blockedCells", board.getBlockedPositions());
+        map.put("movesCount", getMoveCount());
+        map.put("boardSize", board.getSize());
+        map.put("score", score);
+        map.put("implementation", "impl");
+        return map;
+    }
+
+    @Override
+    public void restoreFromSerializable(Object serializedState) {
+        // Implementar restauración desde el objeto serializado según formato guardado si es necesario
     }
 }
