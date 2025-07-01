@@ -1,18 +1,20 @@
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.Position;
+
 import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * Representa una posición en un tablero hexagonal usando coordenadas axiales (q, r).
+ * Compatible con la base Position y con métodos auxiliares para hexágonos.
  */
 public class HexPosition extends Position implements Serializable {
 
     private final int q;
     private final int r;
 
-    // Vectores de dirección para hexágonos (arriba, arriba-derecha, abajo-derecha, abajo, abajo-izquierda, arriba-izquierda)
+    // Direcciones axiales para hexágonos (6 vecinos)
     public static final HexPosition[] DIRECTIONS = {
         new HexPosition(1, 0),    // derecha
         new HexPosition(1, -1),   // arriba-derecha
@@ -22,6 +24,11 @@ public class HexPosition extends Position implements Serializable {
         new HexPosition(0, 1)     // abajo
     };
 
+    /**
+     * Constructor principal de posición hexagonal.
+     * @param q coordenada axial q
+     * @param r coordenada axial r
+     */
     public HexPosition(int q, int r) {
         this.q = q;
         this.r = r;
@@ -36,20 +43,28 @@ public class HexPosition extends Position implements Serializable {
     }
 
     /**
-     * Suma dos posiciones hexagonales (útil para calcular vecinos).
+     * Suma dos posiciones hexagonales (usado para vecinos).
      */
     public HexPosition add(HexPosition other) {
         return new HexPosition(this.q + other.q, this.r + other.r);
     }
 
     /**
-     * Distancia hexagonal (axial) entre dos posiciones.
+     * Calcula la distancia hexagonal entre este y otro hexágono.
      */
     public int distanceTo(HexPosition other) {
         int dq = Math.abs(this.q - other.q);
         int dr = Math.abs(this.r - other.r);
         int ds = Math.abs((-this.q - this.r) - (-other.q - other.r));
         return Math.max(dq, Math.max(dr, ds));
+    }
+
+    /**
+     * Requerido por la clase base Position: indica si está dentro del tablero de tamaño boardSize.
+     */
+    @Override
+    public boolean isWithinBounds(int boardSize) {
+        return q >= 0 && q < boardSize && r >= 0 && r < boardSize;
     }
 
     @Override
