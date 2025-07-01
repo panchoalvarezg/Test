@@ -36,7 +36,7 @@ public class AStarCatMovement extends CatMovementStrategy<HexPosition> {
 
     @Override
     protected Function<HexPosition, Double> getHeuristicFunction(HexPosition targetPosition) {
-        return pos -> pos.distanceTo(targetPosition);
+        return pos -> targetPosition != null ? pos.distanceTo(targetPosition) : 0.0;
     }
 
     @Override
