@@ -34,6 +34,7 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         int r = position.getR();
         int s = -q - r;
         int radius = (size - 1) / 2;
+        // CORREGIDO: Math.max solo acepta 2 argumentos, así que se encadena.
         int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
         return max <= radius;
     }
@@ -55,7 +56,7 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         for (int q = -radius; q <= radius; q++) {
             for (int r = -radius; r <= radius; r++) {
                 int s = -q - r;
-                int max = Math.max(Math.abs(q), Math.abs(r), Math.abs(s));
+                int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
                 if (max <= radius) {
                     HexPosition pos = new HexPosition(q, r);
                     if (condition.test(pos)) {
