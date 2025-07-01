@@ -1,20 +1,16 @@
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.Position;
-
-import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * Representa una posición en un tablero hexagonal usando coordenadas axiales (q, r).
- * Compatible con la base Position y con métodos auxiliares para hexágonos.
  */
-public class HexPosition extends Position implements Serializable {
+public class HexPosition extends Position {
 
     private final int q;
     private final int r;
 
-    // Direcciones axiales para hexágonos (6 vecinos)
     public static final HexPosition[] DIRECTIONS = {
         new HexPosition(1, 0),    // derecha
         new HexPosition(1, -1),   // arriba-derecha
@@ -24,11 +20,6 @@ public class HexPosition extends Position implements Serializable {
         new HexPosition(0, 1)     // abajo
     };
 
-    /**
-     * Constructor principal de posición hexagonal.
-     * @param q coordenada axial q
-     * @param r coordenada axial r
-     */
     public HexPosition(int q, int r) {
         this.q = q;
         this.r = r;
@@ -43,14 +34,7 @@ public class HexPosition extends Position implements Serializable {
     }
 
     /**
-     * Suma dos posiciones hexagonales (usado para vecinos).
-     */
-    public HexPosition add(HexPosition other) {
-        return new HexPosition(this.q + other.q, this.r + other.r);
-    }
-
-    /**
-     * Calcula la distancia hexagonal entre este y otro hexágono.
+     * Calcula la distancia hexagonal (axial) entre dos posiciones.
      */
     public int distanceTo(HexPosition other) {
         int dq = Math.abs(this.q - other.q);
@@ -60,11 +44,31 @@ public class HexPosition extends Position implements Serializable {
     }
 
     /**
-     * Requerido por la clase base Position: indica si está dentro del tablero de tamaño boardSize.
+     * Suma dos posiciones (para obtener vecinos).
+     */
+    public HexPosition add(HexPosition other) {
+        return new HexPosition(this.q + other.q, this.r + other.r);
+    }
+
+    /**
+     * Determina si la posición está dentro de los límites del tablero de tamaño boardSize.
      */
     @Override
     public boolean isWithinBounds(int boardSize) {
         return q >= 0 && q < boardSize && r >= 0 && r < boardSize;
+    }
+
+    /**
+     * Determina si esta posición es adyacente a otra (usado por la base).
+     */
+    @Override
+    public boolean isAdjacentTo(Position other) {
+        if (!(other instanceof HexPosition)) return false;
+        HexPosition o = (HexPosition) other;
+        for (HexPosition dir : DIRECTIONS) {
+            if (o.q == this.q + dir.q && o.r == this.r + dir.r) return true;
+        }
+        return false;
     }
 
     @Override
