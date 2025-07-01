@@ -10,8 +10,8 @@ import java.util.ArrayList;
 
 /**
  * Tablero hexagonal axial donde:
- * - Toda celda visible en el frontend (hexágono axial completo de radio (size-1)/2) es jugable/bloqueable.
- * - El gato solo escapa si sale COMPLETAMENTE del tablero (o sea, si su posición está fuera de isPositionInBounds).
+ * - Toda celda visible en el frontend (hexágono axial completo de radio igual a boardSize) es jugable/bloqueable.
+ * - El gato puede escapar por cualquier celda del borde.
  */
 public class HexGameBoard extends GameBoard<HexPosition> {
 
@@ -25,7 +25,7 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     }
 
     /**
-     * Una posición está en el tablero si pertenece al hexágono axial completo de radio (size-1)/2.
+     * Una posición está en el tablero si pertenece al hexágono axial de radio igual a size.
      * Esto permite bloquear y moverse por cualquier celda que el frontend muestre.
      */
     @Override
@@ -33,14 +33,14 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         int q = position.getQ();
         int r = position.getR();
         int s = -q - r;
-        int radius = (size - 1) / 2;
-        // CORREGIDO: Math.max solo acepta 2 argumentos, así que se encadena.
+        int radius = size; // ¡Debe coincidir con boardSize del frontend!
         int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
         return max <= radius;
     }
 
     @Override
     protected boolean isValidMove(HexPosition position) {
+        // Puedes bloquear cualquier celda visible en el tablero (blancas o grises)
         return isPositionInBounds(position) && !isBlocked(position);
     }
 
@@ -52,7 +52,7 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     @Override
     public List<HexPosition> getPositionsWhere(Predicate<HexPosition> condition) {
         List<HexPosition> list = new ArrayList<>();
-        int radius = (size - 1) / 2;
+        int radius = size;
         for (int q = -radius; q <= radius; q++) {
             for (int r = -radius; r <= radius; r++) {
                 int s = -q - r;
