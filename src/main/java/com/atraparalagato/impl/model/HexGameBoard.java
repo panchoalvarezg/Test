@@ -1,128 +1,91 @@
 package com.atraparalagato.impl.model;
 
-import com.atraparalagato.base.model.GameBoard;
-
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import com.atraparalagato.base.model.Position;
+import java.util.Objects;
 
 /**
- * Implementación avanzada de GameBoard para un tablero hexagonal.
+ * Representa una posición en un tablero hexagonal usando coordenadas axiales (q, r).
  */
-public class HexGameBoard extends GameBoard<HexPosition> {
+public class HexPosition extends Position {
 
-    private final Set<HexPosition> blockedPositions;
+    private final int q;
+    private final int r;
 
-    /**
-     * Constructor, inicializa el tablero de tamaño boardSize.
-     */
-    public HexGameBoard(int boardSize) {
-        super(boardSize);
-        this.blockedPositions = new HashSet<>();
+    public static final HexPosition[] DIRECTIONS = {
+        new HexPosition(1, 0),    // derecha
+        new HexPosition(1, -1),   // arriba-derecha
+        new HexPosition(0, -1),   // arriba
+        new HexPosition(-1, 0),   // izquierda
+        new HexPosition(-1, 1),   // abajo-izquierda
+        new HexPosition(0, 1)     // abajo
+    };
+
+    public HexPosition(int q, int r) {
+        this.q = q;
+        this.r = r;
+    }
+
+    public int getQ() {
+        return q;
+    }
+
+    public int getR() {
+        return r;
     }
 
     /**
-     * Inicializa las posiciones bloqueadas si se requiere (implementación base).
+     * Calcula la distancia hexagonal (axial) entre dos posiciones.
      */
-    @Override
-    protected void initializeBlockedPositions() {
-        blockedPositions.clear();
+    public int distanceTo(HexPosition other) {
+        int dq = Math.abs(this.q - other.q);
+        int dr = Math.abs(this.r - other.r);
+        int ds = Math.abs((-this.q - this.r) - (-other.q - other.r));
+        return Math.max(dq, Math.max(dr, ds));
     }
 
     /**
-     * Determina si la posición está dentro de los límites del tablero.
+     * Suma dos posiciones (para obtener vecinos).
      */
-    @Override
-    public boolean isPositionInBounds(HexPosition pos) {
-        return pos.isWithinBounds(getBoardSize());
+    public HexPosition add(HexPosition other) {
+        return new HexPosition(this.q + other.q, this.r + other.r);
     }
 
     /**
-     * Determina si un movimiento a esa posición es válido.
+     * Determina si la posición está dentro de los límites del tablero de tamaño boardSize.
      */
     @Override
-    public boolean isValidMove(HexPosition pos) {
-        return isPositionInBounds(pos) && !isBlocked(pos);
+    public boolean isWithinBounds(int boardSize) {
+        return q >= 0 && q < boardSize && r >= 0 && r < boardSize;
     }
 
     /**
-     * Ejecuta un movimiento bloqueando la posición.
+     * Determina si esta posición es adyacente a otra (usado por la base).
      */
     @Override
-    public void executeMove(HexPosition pos) {
-        if (!isValidMove(pos)) {
-            throw new IllegalArgumentException("Movimiento no válido: " + pos);
+    public boolean isAdjacentTo(Position other) {
+        if (!(other instanceof HexPosition)) return false;
+        HexPosition o = (HexPosition) other;
+        for (HexPosition dir : DIRECTIONS) {
+            if (o.q == this.q + dir.q && o.r == this.r + dir.r) return true;
         }
-        blockPosition(pos);
+        return false;
     }
 
-    /**
-     * Devuelve una lista de posiciones que cumplen una condición.
-     */
     @Override
-    public List<HexPosition> getPositionsWhere(Predicate<HexPosition> condition) {
-        int n = getBoardSize();
-        List<HexPosition> result = new ArrayList<>();
-        for (int q = 0; q < n; q++) {
-            for (int r = 0; r < n; r++) {
-                HexPosition pos = new HexPosition(q, r);
-                if (condition.test(pos)) {
-                    result.add(pos);
-                }
-            }
-        }
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof HexPosition)) return false;
+        HexPosition that = (HexPosition) o;
+        return q == that.q && r == that.r;
     }
 
-    /**
-     * Obtiene las posiciones vecinas adyacentes a la dada.
-     */
     @Override
-    public List<HexPosition> getAdjacentPositions(HexPosition pos) {
-        List<HexPosition> neighbors = new ArrayList<>();
-        for (HexPosition dir : HexPosition.DIRECTIONS) {
-            HexPosition neighbor = pos.add(dir);
-            if (isPositionInBounds(neighbor)) {
-                neighbors.add(neighbor);
-            }
-        }
-        return neighbors;
+    public int hashCode() {
+        return Objects.hash(q, r);
     }
 
-    /**
-     * Indica si la posición está bloqueada.
-     */
     @Override
-    public boolean isBlocked(HexPosition pos) {
-        return blockedPositions.contains(pos);
-    }
-
-    /**
-     * Bloquea una posición en el tablero.
-     */
-    public void blockPosition(HexPosition pos) {
-        blockedPositions.add(pos);
-    }
-
-    /**
-     * Desbloquea una posición en el tablero.
-     */
-    public void unblockPosition(HexPosition pos) {
-        blockedPositions.remove(pos);
-    }
-
-    /**
-     * Devuelve un set inmutable de posiciones bloqueadas.
-     */
-    public Set<HexPosition> getBlockedPositionsSet() {
-        return Collections.unmodifiableSet(blockedPositions);
-    }
-
-    /**
-     * Permite establecer el set de posiciones bloqueadas (usado en restauración de estado).
-     */
-    public void setBlockedPositions(Set<HexPosition> positions) {
-        blockedPositions.clear();
-        blockedPositions.addAll(positions);
+    public String toString() {
+        return "HexPosition{" + "q=" + q + ", r=" + r + '}';
     }
 }
