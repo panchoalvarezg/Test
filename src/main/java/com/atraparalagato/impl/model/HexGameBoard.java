@@ -1,84 +1,45 @@
-
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameBoard;
 
-import java.util.*;
-import java.util.function.Predicate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
+/**
+ * Implementación concreta de GameBoard para un tablero hexagonal.
+ */
 public class HexGameBoard extends GameBoard<HexPosition> {
 
-    private int boardSize;
-    private Set<HexPosition> blocked = new HashSet<>();
-
-    public HexGameBoard(int boardSize) {
-        this.boardSize = boardSize;
-        this.blocked = initializeBlockedPositions();
+    public HexGameBoard(int size) {
+        super(size);
     }
 
     @Override
-    protected Set<HexPosition> initializeBlockedPositions() {
-        return new HashSet<>();
-    }
-
-    public void setBlockedPositions(Set<HexPosition> positions) {
-        this.blocked = positions;
+    public Set<HexPosition> initializeBlockedPositions() {
+        return new LinkedHashSet<>();
     }
 
     @Override
-    public boolean isPositionInBounds(HexPosition position) {
+    public HexPosition getInitialCatPosition() {
+        int center = getBoardSize() / 2;
+        return new HexPosition(center, center);
+    }
+
+    @Override
+    public Set<HexPosition> getAllPositions() {
+        Set<HexPosition> positions = new LinkedHashSet<>();
+        for (int q = 0; q < getBoardSize(); q++) {
+            for (int r = 0; r < getBoardSize(); r++) {
+                positions.add(new HexPosition(q, r));
+            }
+        }
+        return positions;
+    }
+
+    @Override
+    public boolean isValidPosition(HexPosition position) {
         int q = position.getQ();
         int r = position.getR();
-        return q >= 0 && q < boardSize && r >= 0 && r < boardSize;
-    }
-
-    @Override
-    public boolean isValidMove(HexPosition position) {
-        return isPositionInBounds(position) && !blocked.contains(position);
-    }
-
-    @Override
-    public void executeMove(HexPosition position) {
-        blocked.add(position);
-    }
-
-    @Override
-    public List<HexPosition> getPositionsWhere(Predicate<HexPosition> condition) {
-        List<HexPosition> result = new ArrayList<>();
-        for (int q = 0; q < boardSize; q++) {
-            for (int r = 0; r < boardSize; r++) {
-                HexPosition pos = new HexPosition(q, r);
-                if (condition.test(pos)) {
-                    result.add(pos);
-                }
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public List<HexPosition> getAdjacentPositions(HexPosition position) {
-        int[][] directions = {
-            {+1,  0}, {+1, -1}, { 0, -1},
-            {-1,  0}, {-1, +1}, { 0, +1}
-        };
-        List<HexPosition> adj = new ArrayList<>();
-        for (int[] dir : directions) {
-            HexPosition neighbor = new HexPosition(position.getQ() + dir[0], position.getR() + dir[1]);
-            if (isValidMove(neighbor)) {
-                adj.add(neighbor);
-            }
-        }
-        return adj;
-    }
-
-    @Override
-    public boolean isBlocked(HexPosition position) {
-        return getAdjacentPositions(position).isEmpty();
-    }
-
-    @Override
-    public int getBoardSize() {
-        return boardSize;
+        return q >= 0 && q < getBoardSize() && r >= 0 && r < getBoardSize();
     }
 }
