@@ -6,7 +6,6 @@ import com.atraparalagato.impl.model.HexGameBoard;
 import java.util.*;
 
 public class AStarCatMovement implements CatMovementStrategy<HexPosition> {
-
     @Override
     public List<HexPosition> getPossibleMoves(HexPosition from, Object board) {
         HexGameBoard hexBoard = (HexGameBoard) board;
