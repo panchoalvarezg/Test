@@ -65,6 +65,23 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <!-- Excluir archivos de ejemplo de la compilación -->
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <includes>
+                        <include>com/atraparalagato/impl/**</include>
+                        <include>com/atraparalagato/base/**</include>
+                        <!-- Agrega otros paquetes productivos si los tienes -->
+                    </includes>
+                    <excludes>
+                        <exclude>com/atraparalagato/example/**</exclude>
+                    </excludes>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-</project> 
+</project>
