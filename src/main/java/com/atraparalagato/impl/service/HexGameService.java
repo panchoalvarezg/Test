@@ -1,67 +1,52 @@
-
 package com.atraparalagato.impl.service;
 
 import com.atraparalagato.base.service.GameService;
 import com.atraparalagato.impl.model.HexGameBoard;
 import com.atraparalagato.impl.model.HexGameState;
 import com.atraparalagato.impl.model.HexPosition;
-import com.atraparalagato.impl.repository.H2GameRepository;
 import com.atraparalagato.impl.strategy.AStarCatMovement;
 
 import java.util.Optional;
-import java.util.UUID;
 
+/**
+ * Servicio del juego específico para tablero hexagonal.
+ */
 public class HexGameService implements GameService<HexPosition> {
 
-    private final H2GameRepository repository = new H2GameRepository();
-    private final AStarCatMovement catMovement = new AStarCatMovement();
+    private final AStarCatMovement catMovement;
 
-    @Override
-    public HexGameState createNewGame(int boardSize) {
-        String gameId = UUID.randomUUID().toString();
-        HexGameState state = new HexGameState(gameId, boardSize);
-        repository.save(state);
-        return state;
+    public HexGameService() {
+        this.catMovement = new AStarCatMovement();
     }
 
     @Override
     public Optional<HexPosition> getSuggestedMove(String gameId) {
-        Optional<HexGameState> optional = repository.findById(gameId)
-                .map(state -> (HexGameState) state);
-        if (optional.isEmpty()) return Optional.empty();
+        HexGameState gameState = new HexGameState(gameId, 11);
+        catMovement.setBoard(gameState.getGameBoard());
+        catMovement.setGameState(gameState);
 
-        HexGameState state = optional.get();
-        catMovement.setBoard((HexGameBoard) state.getGameBoard());
-        catMovement.setGameState(state);
-
-        return Optional.ofNullable(catMovement.getSuggestedMove(state.getCatPosition()));
+        return catMovement.getNextMove(gameState.getCatPosition());
     }
 
     @Override
-    public Optional<HexGameState> getGameState(String gameId) {
-        return repository.findById(gameId).map(state -> (HexGameState) state);
+    public HexGameState createNewGame(String gameId, int boardSize) {
+        return new HexGameState(gameId, boardSize);
     }
 
     @Override
-    public boolean executeMove(String gameId, HexPosition position) {
-        Optional<HexGameState> optional = repository.findById(gameId).map(state -> (HexGameState) state);
-        if (optional.isEmpty()) return false;
-
-        HexGameState state = optional.get();
-        if (state.performMove(position)) {
-            repository.save(state);
-            return true;
-        }
-        return false;
+    public void blockPosition(HexGameState state, HexPosition position) {
+        state.getGameBoard().blockPosition(position);
     }
 
     @Override
-    public void moveCat(String gameId, HexPosition nextPosition) {
-        Optional<HexGameState> optional = repository.findById(gameId).map(state -> (HexGameState) state);
-        optional.ifPresent(state -> {
-            state.setCatPosition(nextPosition);
-            state.updateGameStatus();
-            repository.save(state);
-        });
+    public void moveCat(HexGameState state, HexPosition newPosition) {
+        state.setCatPosition(newPosition);
+        state.setMoveCount(state.getMoveCount() + 1);
+    }
+
+    @Override
+    public boolean isGameOver(HexGameState state) {
+        return catMovement.getGoalPredicate().test(state.getCatPosition()) ||
+               catMovement.getNextMove(state.getCatPosition()).isEmpty();
     }
 }
