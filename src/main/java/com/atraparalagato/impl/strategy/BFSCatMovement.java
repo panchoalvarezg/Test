@@ -9,9 +9,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class AStarCatMovement extends CatMovementStrategy<HexPosition> {
+public class BFSCatMovement extends CatMovementStrategy<HexPosition> {
 
-    public AStarCatMovement(HexGameBoard board) {
+    public BFSCatMovement(HexGameBoard board) {
         super(board);
     }
 
@@ -30,13 +30,12 @@ public class AStarCatMovement extends CatMovementStrategy<HexPosition> {
     @Override
     protected Optional<HexPosition> selectBestMove(List<HexPosition> possibleMoves, HexPosition currentPosition, HexPosition targetPosition) {
         if (possibleMoves.isEmpty()) return Optional.empty();
-        Function<HexPosition, Double> heuristic = getHeuristicFunction(targetPosition);
-        return possibleMoves.stream().min(Comparator.comparingDouble(heuristic::apply));
+        return Optional.of(possibleMoves.get(0));
     }
 
     @Override
     protected Function<HexPosition, Double> getHeuristicFunction(HexPosition targetPosition) {
-        return pos -> pos.distanceTo(targetPosition);
+        return pos -> 0.0;
     }
 
     @Override
@@ -76,8 +75,6 @@ public class AStarCatMovement extends CatMovementStrategy<HexPosition> {
     public List<HexPosition> getFullPath(HexPosition currentPosition, HexPosition targetPosition) {
         List<HexPosition> path = new ArrayList<>();
         path.add(currentPosition);
-        if (currentPosition.equals(targetPosition)) return path;
-        // Implementar A* real si lo necesitas
         return path;
     }
 }
