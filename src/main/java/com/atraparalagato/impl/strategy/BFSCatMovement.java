@@ -38,4 +38,9 @@ public class BFSCatMovement extends CatMovementStrategy<HexPosition> {
         }
         return List.of(); // sin camino
     }
+
+    @Override
+    public boolean hasPathToGoal(HexPosition from) {
+        return !board.getAdjacentPositions(from).isEmpty();
+    }
 }
