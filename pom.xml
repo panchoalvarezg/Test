@@ -72,11 +72,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <includes>
-                        <include>com/atraparalagato/impl/**</include>
-                        <include>com/atraparalagato/base/**</include>
-                        <!-- Agrega otros paquetes productivos si los tienes -->
-                    </includes>
+                    <!-- EXCLUIMOS SOLO LOS EJEMPLOS, INCLUIMOS TODO LO DEMÁS -->
                     <excludes>
                         <exclude>com/atraparalagato/example/**</exclude>
                     </excludes>
