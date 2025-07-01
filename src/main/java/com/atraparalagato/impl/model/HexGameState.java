@@ -1,54 +1,29 @@
-
 package com.atraparalagato.impl.model;
 
-import com.atraparalagato.base.model.GameBoard;
 import com.atraparalagato.base.model.GameState;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
+/**
+ * Implementación de GameState para el juego del gato en tablero hexagonal.
+ */
 public class HexGameState extends GameState<HexPosition> {
 
-    private String gameId;
-    private int moveCount = 0;
-    private boolean finished = false;
-    private boolean playerWon = false;
+    private final HexGameBoard board;
     private HexPosition catPosition;
-    private HexGameBoard board;
 
     public HexGameState(String gameId, int boardSize) {
-        this.gameId = gameId;
+        super(gameId);
         this.board = new HexGameBoard(boardSize);
-        this.catPosition = new HexPosition(boardSize / 2, boardSize / 2);
+        this.catPosition = board.getInitialCatPosition();
     }
 
     @Override
-    public String getGameId() {
-        return gameId;
-    }
-
-    @Override
-    public boolean canExecuteMove(HexPosition position) {
-        return !finished && board.isValidMove(position);
-    }
-
-    @Override
-    public boolean performMove(HexPosition position) {
-        if (!canExecuteMove(position)) return false;
-        board.executeMove(position);
-        moveCount++;
-        updateGameStatus();
-        return true;
-    }
-
-    @Override
-    public void updateGameStatus() {
-        if (!board.isPositionInBounds(catPosition)) {
-            finished = true;
-            playerWon = false;
-        } else if (board.isBlocked(catPosition)) {
-            finished = true;
-            playerWon = true;
-        }
+    public HexGameBoard getGameBoard() {
+        return board;
     }
 
     @Override
@@ -57,51 +32,41 @@ public class HexGameState extends GameState<HexPosition> {
     }
 
     @Override
-    public void setCatPosition(HexPosition position) {
-        this.catPosition = position;
+    public void setCatPosition(HexPosition newPosition) {
+        this.catPosition = newPosition;
     }
 
     @Override
-    public boolean isGameFinished() {
-        return finished;
+    public JSONObject getSerializableState() {
+        JSONObject json = new JSONObject();
+        json.put("gameId", getGameId());
+        json.put("moveCount", getMoveCount());
+        json.put("boardSize", board.getBoardSize());
+
+        JSONArray catPos = new JSONArray();
+        catPos.put(catPosition.getQ());
+        catPos.put(catPosition.getR());
+        json.put("catPosition", catPos);
+
+        JSONArray blocked = new JSONArray();
+        for (HexPosition pos : board.getBlockedPositions()) {
+            JSONArray pair = new JSONArray();
+            pair.put(pos.getQ());
+            pair.put(pos.getR());
+            blocked.put(pair);
+        }
+        json.put("blockedPositions", blocked);
+
+        return json;
     }
 
     @Override
-    public boolean hasPlayerWon() {
-        return playerWon;
-    }
-
-    @Override
-    public int calculateScore() {
-        return moveCount;
-    }
-
-    @Override
-    public Map<String, Object> getSerializableState() {
-        Map<String, Object> state = new HashMap<>();
-        state.put("gameId", gameId);
-        state.put("moveCount", moveCount);
-        state.put("catPosition", List.of(catPosition.getQ(), catPosition.getR()));
-        state.put("blockedPositions", board.getPositionsWhere(p -> !board.isValidMove(p)));
-        state.put("boardSize", board.getBoardSize());
-        return state;
-    }
-
-    @Override
-    public void restoreFromSerializable(Object data) {
-        throw new UnsupportedOperationException("restoreFromSerializable no implementado aún");
-    }
-
-    @Override
-    public GameBoard<HexPosition> getGameBoard() {
-        return board;
-    }
-
-    public void setMoveCount(int count) {
-        this.moveCount = count;
+    public void setMoveCount(int moveCount) {
+        super.setMoveCount(moveCount);
     }
 
     public void setBoardSize(int size) {
-        this.board = new HexGameBoard(size);
+        // Este método no tiene sentido en tiempo de ejecución ya que el board es final.
+        // Lo incluimos para cumplir con las llamadas existentes que podrían requerirlo.
     }
 }
