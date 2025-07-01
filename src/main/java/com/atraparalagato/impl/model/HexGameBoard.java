@@ -5,6 +5,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class HexGameBoard extends GameBoard<HexPosition> {
 
@@ -87,9 +89,28 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         return true;
     }
 
-    public Set<HexPosition> getBlockedPositions() {
-        return new LinkedHashSet<>(blockedPositions);
+    // IMPLEMENTACIÓN REQUERIDA POR LA BASE
+    @Override
+    public List<HexPosition> getPositionsWhere(Predicate<HexPosition> predicate) {
+        // Devuelve todas las posiciones del tablero que cumplen el predicado
+        List<HexPosition> result = new ArrayList<>();
+        int border = getSize() - 1;
+        for (int q = -border; q <= border; q++) {
+            for (int r = -border; r <= border; r++) {
+                int s = -q - r;
+                if (Math.abs(s) <= border) {
+                    HexPosition pos = new HexPosition(q, r);
+                    if (predicate.test(pos)) {
+                        result.add(pos);
+                    }
+                }
+            }
+        }
+        return result;
     }
+
+    // El método getBlockedPositions() es FINAL en la clase base, así que NO lo sobreescribas.
+    // Usa el método de la clase base cuando lo necesites.
 
     public void setBlockedPositions(Set<HexPosition> blocked) {
         blockedPositions.clear();
