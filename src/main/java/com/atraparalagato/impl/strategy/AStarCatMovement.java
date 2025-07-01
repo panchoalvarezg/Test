@@ -1,4 +1,3 @@
-
 package com.atraparalagato.impl.strategy;
 
 import com.atraparalagato.base.strategy.CatMovementStrategy;
@@ -7,66 +6,69 @@ import com.atraparalagato.impl.model.HexGameState;
 import com.atraparalagato.impl.model.HexPosition;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * Estrategia de movimiento del gato usando búsqueda A*.
+ */
 public class AStarCatMovement implements CatMovementStrategy<HexPosition> {
 
     private HexGameBoard board;
-    private HexGameState state;
+    private HexGameState gameState;
 
     public void setBoard(HexGameBoard board) {
         this.board = board;
     }
 
-    public void setGameState(HexGameState state) {
-        this.state = state;
+    public void setGameState(HexGameState gameState) {
+        this.gameState = gameState;
     }
 
     @Override
-    public HexPosition getSuggestedMove(HexPosition start) {
-        PriorityQueue<Node> open = new PriorityQueue<>(Comparator.comparingInt(n -> n.f));
-        Map<HexPosition, HexPosition> cameFrom = new HashMap<>();
+    public Optional<HexPosition> getNextMove(HexPosition from) {
+        Set<HexPosition> goals = getGoalPositions();
+        if (goals.isEmpty()) return Optional.empty();
+
+        PriorityQueue<Node> openSet = new PriorityQueue<>(Comparator.comparingInt(n -> n.fScore));
         Map<HexPosition, Integer> gScore = new HashMap<>();
+        Map<HexPosition, HexPosition> cameFrom = new HashMap<>();
 
-        gScore.put(start, 0);
-        open.add(new Node(start, heuristic(start), 0));
+        gScore.put(from, 0);
+        openSet.add(new Node(from, heuristic(from)));
 
-        Set<HexPosition> visited = new HashSet<>();
+        while (!openSet.isEmpty()) {
+            Node current = openSet.poll();
 
-        while (!open.isEmpty()) {
-            Node current = open.poll();
             if (getGoalPredicate().test(current.position)) {
-                return reconstructPath(cameFrom, current.position);
+                return Optional.of(reconstructPath(cameFrom, current.position));
             }
-            visited.add(current.position);
 
-            for (HexPosition neighbor : board.getAdjacentPositions(current.position)) {
-                if (visited.contains(neighbor)) continue;
-                int tentativeG = gScore.getOrDefault(current.position, Integer.MAX_VALUE) + getMoveCost(current.position, neighbor);
+            for (HexPosition neighbor : board.getNeighbors(current.position)) {
+                if (board.getBlockedPositions().contains(neighbor)) continue;
+
+                int tentativeG = gScore.get(current.position) + getMoveCost(current.position, neighbor);
                 if (tentativeG < gScore.getOrDefault(neighbor, Integer.MAX_VALUE)) {
                     cameFrom.put(neighbor, current.position);
                     gScore.put(neighbor, tentativeG);
-                    int f = tentativeG + heuristic(neighbor);
-                    open.add(new Node(neighbor, f, tentativeG));
+                    int fScore = tentativeG + heuristic(neighbor);
+                    openSet.add(new Node(neighbor, fScore));
                 }
             }
         }
-        return null;
+
+        return Optional.empty();
     }
 
-    private HexPosition reconstructPath(Map<HexPosition, HexPosition> cameFrom, HexPosition current) {
-        while (cameFrom.containsKey(current) && !cameFrom.get(current).equals(state.getCatPosition())) {
-            current = cameFrom.get(current);
-        }
-        return current;
+    @Override
+    public Predicate<HexPosition> getGoalPredicate() {
+        int size = board.getBoardSize();
+        return pos -> pos.getQ() == 0 || pos.getQ() == size - 1 || pos.getR() == 0 || pos.getR() == size - 1;
     }
 
-    private int heuristic(HexPosition position) {
-        int q = position.getQ();
-        int r = position.getR();
-        int size = board.getBoardSize() - 1;
-        int toEdge = Math.min(Math.min(q, r), Math.min(size - q, size - r));
-        return toEdge;
+    @Override
+    public Function<HexPosition, Integer> getHeuristicFunction() {
+        return this::heuristic;
     }
 
     @Override
@@ -74,22 +76,42 @@ public class AStarCatMovement implements CatMovementStrategy<HexPosition> {
         return 1;
     }
 
-    @Override
-    public Predicate<HexPosition> getGoalPredicate() {
+    private int heuristic(HexPosition pos) {
+        int q = pos.getQ();
+        int r = pos.getR();
         int size = board.getBoardSize();
-        return pos -> pos.getQ() == 0 || pos.getR() == 0 ||
-                      pos.getQ() == size - 1 || pos.getR() == size - 1;
+        return Math.min(Math.min(q, r), Math.min(size - 1 - q, size - 1 - r));
     }
-    
+
+    private HexPosition reconstructPath(Map<HexPosition, HexPosition> cameFrom, HexPosition goal) {
+        HexPosition current = goal;
+        while (cameFrom.containsKey(current) && cameFrom.get(cameFrom.get(current)) != null) {
+            current = cameFrom.get(current);
+        }
+        return current;
+    }
+
+    private Set<HexPosition> getGoalPositions() {
+        Set<HexPosition> goals = new HashSet<>();
+        int size = board.getBoardSize();
+
+        for (int i = 0; i < size; i++) {
+            goals.add(new HexPosition(0, i));
+            goals.add(new HexPosition(size - 1, i));
+            goals.add(new HexPosition(i, 0));
+            goals.add(new HexPosition(i, size - 1));
+        }
+
+        return goals;
+    }
+
     private static class Node {
         HexPosition position;
-        int f;
-        int g;
+        int fScore;
 
-        Node(HexPosition pos, int f, int g) {
-            this.position = pos;
-            this.f = f;
-            this.g = g;
+        Node(HexPosition position, int fScore) {
+            this.position = position;
+            this.fScore = fScore;
         }
     }
 }
