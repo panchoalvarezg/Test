@@ -1,66 +1,48 @@
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameState;
-import java.io.Serializable;
 import java.util.*;
 
-public class HexGameState extends GameState<HexPosition> implements Serializable {
+public class HexGameState extends GameState<HexPosition> {
 
     private HexPosition catPosition;
-    private boolean finished;
+    private final HexGameBoard board;
     private boolean playerWon;
-    private int moveCount;
-    private int score;
 
-    public HexGameState(HexGameBoard board, HexPosition catStart) {
-        super(board);
+    public HexGameState(String gameId, HexGameBoard board, HexPosition catStart) {
+        super(gameId);
+        this.board = board;
         this.catPosition = catStart;
-        this.finished = false;
         this.playerWon = false;
-        this.moveCount = 0;
-        this.score = 0;
     }
 
     @Override
-    public boolean canExecuteMove(HexPosition pos) {
-        return !getBoard().isBlocked(pos) && getBoard().isPositionInBounds(pos) && !pos.equals(catPosition);
+    protected boolean canExecuteMove(HexPosition pos) {
+        return board.isValidMove(pos) && !pos.equals(catPosition);
     }
 
     @Override
-    public void performMove(HexPosition pos) {
-        if (!canExecuteMove(pos)) throw new IllegalArgumentException("Movimiento inválido");
-        ((HexGameBoard) getBoard()).blockPosition(pos);
-        moveCount++;
-        updateGameStatus();
+    protected boolean performMove(HexPosition pos) {
+        if (!canExecuteMove(pos)) return false;
+        board.executeMove(pos);
+        return true;
     }
 
     @Override
-    public void updateGameStatus() {
-        if (catPosition == null) return;
-        boolean escape = isAtEdge(catPosition);
-        boolean trapped = getAvailableCatMoves().isEmpty();
-
-        if (escape) {
-            finished = true;
-            playerWon = false;
-            score = Math.max(0, 100 - moveCount * 5);
-        } else if (trapped) {
-            finished = true;
+    protected void updateGameStatus() {
+        // Lógica fin de juego: atrapado o escapó
+        if (isCatAtEdge()) {
+            status = GameStatus.PLAYER_LOST;
+        } else if (board.getAdjacentPositions(catPosition).stream().allMatch(board::isBlocked)) {
+            status = GameStatus.PLAYER_WON;
             playerWon = true;
-            score = Math.max(0, 200 - moveCount * 8);
         }
     }
 
-    private boolean isAtEdge(HexPosition pos) {
-        int q = pos.getQ(), r = pos.getR();
-        int n = ((HexGameBoard) getBoard()).getBoardSize();
-        return q == 0 || r == 0 || q == n - 1 || r == n - 1;
-    }
-
-    private List<HexPosition> getAvailableCatMoves() {
-        return ((HexGameBoard) getBoard()).getAdjacentPositions(catPosition).stream()
-                .filter(p -> !((HexGameBoard) getBoard()).isBlocked(p))
-                .toList();
+    private boolean isCatAtEdge() {
+        int n = board.getSize();
+        int q = catPosition.getQ(), r = catPosition.getR();
+        return q == 0 || r == 0 || q == n-1 || r == n-1;
     }
 
     @Override
@@ -70,12 +52,12 @@ public class HexGameState extends GameState<HexPosition> implements Serializable
 
     @Override
     public void setCatPosition(HexPosition pos) {
-        catPosition = pos;
+        this.catPosition = pos;
     }
 
     @Override
     public boolean isGameFinished() {
-        return finished;
+        return status == GameStatus.PLAYER_LOST || status == GameStatus.PLAYER_WON;
     }
 
     @Override
@@ -85,33 +67,26 @@ public class HexGameState extends GameState<HexPosition> implements Serializable
 
     @Override
     public int calculateScore() {
-        return score;
+        return playerWon ? 200 - getMoveCount() * 8 : 100 - getMoveCount() * 5;
     }
 
     @Override
     public Object getSerializableState() {
         Map<String, Object> state = new HashMap<>();
         state.put("cat", catPosition);
-        state.put("blocked", new ArrayList<>(((HexGameBoard) getBoard()).getBlockedPositions()));
-        state.put("finished", finished);
-        state.put("playerWon", playerWon);
-        state.put("moveCount", moveCount);
-        state.put("score", score);
+        state.put("blocked", new ArrayList<>(board.getBlockedPositions()));
+        state.put("status", status);
+        state.put("moveCount", getMoveCount());
         return state;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public void restoreFromSerializable(Object data) {
-        if (!(data instanceof Map map)) throw new IllegalArgumentException("Estado serializable inválido");
+    public void restoreFromSerializable(Object serializedState) {
+        if (!(serializedState instanceof Map map)) return;
         this.catPosition = (HexPosition) map.get("cat");
-        this.finished = Boolean.TRUE.equals(map.get("finished"));
-        this.playerWon = Boolean.TRUE.equals(map.get("playerWon"));
+        this.playerWon = GameStatus.PLAYER_WON.equals(map.get("status"));
         this.moveCount = (Integer) map.getOrDefault("moveCount", 0);
-        this.score = (Integer) map.getOrDefault("score", 0);
-        ((HexGameBoard) getBoard()).setBlockedPositions(new HashSet<>((List<HexPosition>) map.get("blocked")));
+        board.blockedPositions.clear();
+        board.blockedPositions.addAll((Collection<HexPosition>) map.get("blocked"));
     }
-
-    public int getMoveCount() { return moveCount; }
-    public void setMoveCount(int count) { moveCount = count; }
 }
