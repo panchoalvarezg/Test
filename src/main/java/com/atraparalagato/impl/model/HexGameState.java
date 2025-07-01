@@ -89,7 +89,7 @@ public class HexGameState extends GameState<HexPosition> {
         this.catPosition = (HexPosition) map.get("cat");
         this.playerWon = GameStatus.PLAYER_WON.equals(map.get("status"));
         this.moveCount = (Integer) map.getOrDefault("moveCount", 0);
-        board.blockedPositions.clear();
-        board.blockedPositions.addAll((Collection<HexPosition>) map.get("blocked"));
+        board.getBlockedPositions().clear();
+        board.getBlockedPositions().addAll((Collection<HexPosition>) map.get("blocked"));
     }
 }
