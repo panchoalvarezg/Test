@@ -4,7 +4,6 @@ import com.atraparalagato.base.repository.DataRepository;
 import com.atraparalagato.base.model.GameState;
 import com.atraparalagato.impl.model.HexGameState;
 import com.atraparalagato.impl.model.HexPosition;
-import com.atraparalagato.impl.model.HexGameBoard;
 
 import java.sql.*;
 import java.util.*;
@@ -34,11 +33,10 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
         String query = """
             CREATE TABLE IF NOT EXISTS Games (
             gameId VARCHAR(255) PRIMARY KEY NOT NULL,
-            data JSON NOT NULL
+            data CLOB NOT NULL
             )
             """;
-        try {
-            Statement statement = connection.createStatement();
+        try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(query);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -52,34 +50,32 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
             throw new IllegalArgumentException("Estado no es HexGameState");
         }
 
-        String selectQuery = """
-            SELECT COUNT(gameId) FROM Games
-            WHERE gameId = '""" + hexState.getGameId() + "';";
-
-        try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(selectQuery);
+        String selectQuery = "SELECT COUNT(gameId) FROM Games WHERE gameId = ?";
+        try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
+            selectStmt.setString(1, hexState.getGameId());
+            ResultSet resultSet = selectStmt.executeQuery();
 
             JSONObject serializedEntity = (JSONObject) hexState.getSerializableState();
 
             beforeSave(entity);
 
             if (resultSet.next() && resultSet.getInt(1) != 0) {
-                String updateQuery = """
-                    UPDATE Games
-                    SET data = '""" + serializedEntity.toString() + "'" + """
-                    WHERE gameId = '""" + hexState.getGameId() + "';";
-                statement.executeUpdate(updateQuery);
+                String updateQuery = "UPDATE Games SET data = ? WHERE gameId = ?";
+                try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
+                    updateStmt.setString(1, serializedEntity.toString());
+                    updateStmt.setString(2, hexState.getGameId());
+                    updateStmt.executeUpdate();
+                }
             } else {
-                String insertQuery = """
-                    INSERT INTO Games (gameId, data)
-                    VALUES
-                    ('""" + hexState.getGameId() + "', '" + serializedEntity.toString() + "');";
-                statement.executeUpdate(insertQuery);
+                String insertQuery = "INSERT INTO Games (gameId, data) VALUES (?, ?)";
+                try (PreparedStatement insertStmt = connection.prepareStatement(insertQuery)) {
+                    insertStmt.setString(1, hexState.getGameId());
+                    insertStmt.setString(2, serializedEntity.toString());
+                    insertStmt.executeUpdate();
+                }
             }
 
             afterSave(entity);
-
             return hexState;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -91,14 +87,10 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
     public Optional<GameState<HexPosition>> findById(String id) {
         if (id == null) return Optional.empty();
 
-        String query = """
-            SELECT data FROM Games
-            WHERE gameId = '""" + id + "'" + """
-            LIMIT 1;
-            """;
-        try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(query);
+        String query = "SELECT data FROM Games WHERE gameId = ? LIMIT 1";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, id);
+            ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
                 String dataJSONString = resultSet.getString(1);
@@ -113,32 +105,29 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
     }
 
     private HexGameState deserializeGameState(String serializedData, String gameId) {
-        try {
-            JSONObject json = new JSONObject(serializedData);
-            int boardSize = json.getInt("boardSize");
-            HexGameBoard board = new HexGameBoard(boardSize);
+        JSONObject json = new JSONObject(serializedData);
+        int boardSize = json.getInt("boardSize");
+        HexGameState state = new HexGameState(gameId, boardSize);
 
-            JSONArray catPos = json.getJSONArray("catPosition");
-            HexPosition catPosition = new HexPosition(catPos.getInt(0), catPos.getInt(1));
+        JSONArray catPos = json.getJSONArray("catPosition");
+        state.setCatPosition(new HexPosition(catPos.getInt(0), catPos.getInt(1)));
 
-            JSONArray blockedArray = json.getJSONArray("blockedPositions");
-            LinkedHashSet<HexPosition> blocked = new LinkedHashSet<>();
-            for (int i = 0; i < blockedArray.length(); i++) {
-                JSONArray pos = blockedArray.getJSONArray(i);
-                blocked.add(new HexPosition(pos.getInt(0), pos.getInt(1)));
-            }
-            board.setBlockedPositions(blocked);
-
-            int moveCount = json.getInt("moveCount");
-
-            return new HexGameState(gameId, boardSize, catPosition, board, moveCount);
-        } catch (JSONException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error al deserializar estado del juego", e);
+        JSONArray blockedArray = json.getJSONArray("blockedPositions");
+        Set<HexPosition> blocked = new LinkedHashSet<>();
+        for (int i = 0; i < blockedArray.length(); i++) {
+            JSONArray pos = blockedArray.getJSONArray(i);
+            blocked.add(new HexPosition(pos.getInt(0), pos.getInt(1)));
         }
+        state.getGameBoard().setBlockedPositions(blocked);
+
+        for (int i = 0; i < json.getInt("moveCount"); i++) {
+            state.incrementMoveCount();
+        }
+
+        return state;
     }
 
-    // Métodos no implementados
+    // Otros métodos no implementados (como se indicó en el README)
     @Override public List<GameState<HexPosition>> findAll() { throw new UnsupportedOperationException(); }
     @Override public List<GameState<HexPosition>> findWhere(Predicate<GameState<HexPosition>> condition) { throw new UnsupportedOperationException(); }
     @Override public <R> List<R> findAndTransform(Predicate<GameState<HexPosition>> condition, Function<GameState<HexPosition>, R> transformer) { throw new UnsupportedOperationException(); }
@@ -151,4 +140,4 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
     @Override public List<GameState<HexPosition>> findAllSorted(Function<GameState<HexPosition>, ? extends Comparable<?>> sortKeyExtractor, boolean ascending) { throw new UnsupportedOperationException(); }
     @Override public <R> List<R> executeCustomQuery(String query, Function<Object, R> resultMapper) { throw new UnsupportedOperationException(); }
     @Override protected void cleanup() { throw new UnsupportedOperationException(); }
-}
+} 
