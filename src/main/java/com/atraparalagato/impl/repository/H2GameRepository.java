@@ -80,10 +80,12 @@ public class H2GameRepository extends DataRepository<HexGameState, String> {
     }
 
     @Override
-    public List<HexGameState> findAllSorted(Function<HexGameState, ? extends Comparable<?>> sortKeyExtractor, boolean ascending) {
+    public <R extends Comparable<R>> List<HexGameState> findAllSorted(Function<HexGameState, R> sortKeyExtractor, boolean ascending) {
         List<HexGameState> all = findAll();
         all.sort((o1, o2) -> {
-            int cmp = sortKeyExtractor.apply(o1).compareTo(sortKeyExtractor.apply(o2));
+            R key1 = sortKeyExtractor.apply(o1);
+            R key2 = sortKeyExtractor.apply(o2);
+            int cmp = key1.compareTo(key2);
             return ascending ? cmp : -cmp;
         });
         return all;
