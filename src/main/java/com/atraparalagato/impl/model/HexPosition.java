@@ -6,6 +6,16 @@ public class HexPosition extends Position {
     private final int q;
     private final int r;
 
+    // Las 6 direcciones axiales estándar para hexágonos
+    public static final HexPosition[] DIRECTIONS = {
+        new HexPosition(+1,  0),
+        new HexPosition(+1, -1),
+        new HexPosition( 0, -1),
+        new HexPosition(-1,  0),
+        new HexPosition(-1, +1),
+        new HexPosition( 0, +1)
+    };
+
     public HexPosition(int q, int r) {
         this.q = q;
         this.r = r;
@@ -19,11 +29,9 @@ public class HexPosition extends Position {
         return r;
     }
 
-    // --- AGREGA ESTE MÉTODO ---
     public int getS() {
         return -q - r;
     }
-    // --------------------------
 
     @Override
     public double distanceTo(Position other) {
