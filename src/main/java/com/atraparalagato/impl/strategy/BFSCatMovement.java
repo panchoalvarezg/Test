@@ -1,51 +1,69 @@
-// BFSCatMovement.java
+
 package com.atraparalagato.impl.strategy;
 
 import com.atraparalagato.base.strategy.CatMovementStrategy;
+import com.atraparalagato.impl.model.HexGameBoard;
+import com.atraparalagato.impl.model.HexGameState;
 import com.atraparalagato.impl.model.HexPosition;
 
 import java.util.*;
+import java.util.function.Predicate;
 
-public class BFSCatMovement extends CatMovementStrategy<HexPosition> {
+public class BFSCatMovement implements CatMovementStrategy<HexPosition> {
 
-    @Override
-    public HexPosition selectBestMove(HexPosition currentPosition) {
-        List<HexPosition> neighbors = board.getAdjacentPositions(currentPosition);
-        if (neighbors.isEmpty()) return currentPosition;
-        return neighbors.get(0); // devuelve el primero por ahora
+    private HexGameBoard board;
+    private HexGameState state;
+
+    public void setBoard(HexGameBoard board) {
+        this.board = board;
+    }
+
+    public void setGameState(HexGameState state) {
+        this.state = state;
     }
 
     @Override
-    public List<HexPosition> getFullPath(HexPosition from, HexPosition to) {
-        Queue<List<HexPosition>> queue = new LinkedList<>();
+    public HexPosition getSuggestedMove(HexPosition start) {
+        Queue<HexPosition> queue = new LinkedList<>();
+        Map<HexPosition, HexPosition> cameFrom = new HashMap<>();
         Set<HexPosition> visited = new HashSet<>();
+        Predicate<HexPosition> isGoal = getGoalPredicate();
 
-        queue.add(List.of(from));
-        visited.add(from);
+        queue.add(start);
+        visited.add(start);
 
         while (!queue.isEmpty()) {
-            List<HexPosition> path = queue.poll();
-            HexPosition last = path.get(path.size() - 1);
-            if (last.equals(to)) return path;
-            for (HexPosition neighbor : board.getAdjacentPositions(last)) {
+            HexPosition current = queue.poll();
+            if (isGoal.test(current)) {
+                return reconstructPath(cameFrom, current);
+            }
+            for (HexPosition neighbor : board.getAdjacentPositions(current)) {
                 if (!visited.contains(neighbor)) {
                     visited.add(neighbor);
-                    List<HexPosition> newPath = new ArrayList<>(path);
-                    newPath.add(neighbor);
-                    queue.add(newPath);
+                    cameFrom.put(neighbor, current);
+                    queue.add(neighbor);
                 }
             }
         }
-        return List.of(); // sin camino
+        return null;
+    }
+
+    private HexPosition reconstructPath(Map<HexPosition, HexPosition> cameFrom, HexPosition current) {
+        while (cameFrom.containsKey(current) && !cameFrom.get(current).equals(state.getCatPosition())) {
+            current = cameFrom.get(current);
+        }
+        return current;
     }
 
     @Override
-    public boolean hasPathToGoal(HexPosition from) {
-        return !board.getAdjacentPositions(from).isEmpty();
+    public int getMoveCost(HexPosition from, HexPosition to) {
+        return 1;
     }
 
     @Override
-    public double getMoveCost(HexPosition from, HexPosition to) {
-        return 1.0;
+    public Predicate<HexPosition> getGoalPredicate() {
+        int size = board.getBoardSize();
+        return pos -> pos.getQ() == 0 || pos.getR() == 0 ||
+                      pos.getQ() == size - 1 || pos.getR() == size - 1;
     }
 }
