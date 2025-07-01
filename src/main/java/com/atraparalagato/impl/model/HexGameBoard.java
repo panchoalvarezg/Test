@@ -8,10 +8,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.ArrayList;
 
-/**
- * Implementación avanzada del tablero hexagonal para el juego Atrapar al Gato.
- * Debe ser más robusta y sofisticada que ExampleGameBoard.
- */
 public class HexGameBoard extends GameBoard<HexPosition> {
 
     public HexGameBoard(int size) {
@@ -27,11 +23,8 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     protected boolean isPositionInBounds(HexPosition position) {
         int q = position.getQ();
         int r = position.getR();
-        int s = -q - r;
-        // Tablero hexagonal axial: q, r, s deben estar en [-radius, radius]
-        // Con size = cantidad de filas/columnas, radius = (size - 1) / 2
-        int radius = (size - 1) / 2;
-        return Math.abs(q) <= radius && Math.abs(r) <= radius && Math.abs(s) <= radius;
+        // Permite todas las celdas que aparecen en el frontend (grid rectangular)
+        return q >= 0 && r >= 0 && q < size && r < size;
     }
 
     @Override
@@ -47,15 +40,11 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     @Override
     public List<HexPosition> getPositionsWhere(Predicate<HexPosition> condition) {
         List<HexPosition> list = new ArrayList<>();
-        int radius = (size - 1) / 2;
-        for (int q = -radius; q <= radius; q++) {
-            for (int r = -radius; r <= radius; r++) {
-                int s = -q - r;
-                if (Math.abs(s) <= radius) {
-                    HexPosition pos = new HexPosition(q, r);
-                    if (condition.test(pos)) {
-                        list.add(pos);
-                    }
+        for (int q = 0; q < size; q++) {
+            for (int r = 0; r < size; r++) {
+                HexPosition pos = new HexPosition(q, r);
+                if (condition.test(pos)) {
+                    list.add(pos);
                 }
             }
         }
@@ -83,10 +72,8 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         return blockedPositions.contains(position);
     }
 
-    // Métodos utilitarios específicos
-
+    // Extra: útil para lógica de estado
     public boolean isCatTrapped(HexPosition catPos) {
-        // El gato está atrapado si todas sus adyacencias están bloqueadas o fuera del tablero
         for (HexPosition n : getAdjacentPositions(catPos)) {
             if (!isBlocked(n)) {
                 return false;
@@ -96,7 +83,9 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     }
 
     public boolean isAtEdge(HexPosition pos) {
-        int radius = (size - 1) / 2;
-        return Math.abs(pos.getQ()) == radius || Math.abs(pos.getR()) == radius || Math.abs(-pos.getQ() - pos.getR()) == radius;
+        // Está en el borde si alguna coordenada es 0 o size-1
+        int q = pos.getQ();
+        int r = pos.getR();
+        return q == 0 || r == 0 || q == size - 1 || r == size - 1;
     }
 }
