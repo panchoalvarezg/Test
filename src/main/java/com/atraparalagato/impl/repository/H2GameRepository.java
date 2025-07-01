@@ -1,71 +1,54 @@
-package com.atraparalagato.impl.strategy;
+package com.atraparalagato.impl.repository;
 
-import com.atraparalagato.base.strategy.CatMovementStrategy;
-import com.atraparalagato.impl.model.HexGameBoard;
-import com.atraparalagato.impl.model.HexPosition;
-
+import com.atraparalagato.base.repository.DataRepository;
+import com.atraparalagato.impl.model.HexGameState;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
-/**
- * Estrategia de movimiento del gato usando BFS (camino más corto).
- */
-public class BFSCatMovement implements CatMovementStrategy<HexPosition, HexGameBoard> {
+public class H2GameRepository implements DataRepository<HexGameState> {
+
+    private final Map<String, HexGameState> storage = new HashMap<>();
 
     @Override
-    public List<HexPosition> getPossibleMoves(HexPosition from, HexGameBoard board) {
-        return board.getAdjacentPositions(from).stream()
-                .filter(p -> !board.isBlocked(p))
-                .toList();
+    public void save(HexGameState state) {
+        storage.put(state.getGameId(), state);
     }
 
     @Override
-    public HexPosition selectBestMove(HexPosition from, HexGameBoard board, List<HexPosition> possibleMoves) {
-        List<HexPosition> path = getFullPath(from, board);
-        return path.size() > 1 ? path.get(1) : null;
+    public Optional<HexGameState> findById(String id) {
+        return Optional.ofNullable(storage.get(id));
     }
 
     @Override
-    public boolean hasPathToGoal(HexPosition from, HexGameBoard board) {
-        return !getFullPath(from, board).isEmpty();
+    public List<HexGameState> findAll() {
+        return new ArrayList<>(storage.values());
     }
 
     @Override
-    public List<HexPosition> getFullPath(HexPosition from, HexGameBoard board) {
-        Predicate<HexPosition> isGoal = pos -> {
-            int n = board.getBoardSize();
-            return pos.getQ() == 0 || pos.getR() == 0 || pos.getQ() == n - 1 || pos.getR() == n - 1;
-        };
-
-        Queue<HexPosition> queue = new ArrayDeque<>();
-        Map<HexPosition, HexPosition> parents = new HashMap<>();
-        Set<HexPosition> visited = new HashSet<>();
-        queue.add(from);
-        visited.add(from);
-
-        while (!queue.isEmpty()) {
-            HexPosition current = queue.poll();
-            if (isGoal.test(current)) {
-                return buildPath(current, parents);
-            }
-            for (HexPosition neighbor : board.getAdjacentPositions(current)) {
-                if (!visited.contains(neighbor) && !board.isBlocked(neighbor)) {
-                    visited.add(neighbor);
-                    parents.put(neighbor, current);
-                    queue.add(neighbor);
-                }
+    public List<HexGameState> findWhere(Predicate<HexGameState> condition) {
+        List<HexGameState> result = new ArrayList<>();
+        for (HexGameState state : storage.values()) {
+            if (condition.test(state)) {
+                result.add(state);
             }
         }
-        return Collections.emptyList();
+        return result;
     }
 
-    private List<HexPosition> buildPath(HexPosition goal, Map<HexPosition, HexPosition> parents) {
-        LinkedList<HexPosition> path = new LinkedList<>();
-        HexPosition current = goal;
-        while (current != null) {
-            path.addFirst(current);
-            current = parents.get(current);
+    @Override
+    public <R> List<R> findAndTransform(Predicate<HexGameState> filter, Function<HexGameState, R> transformer) {
+        List<R> result = new ArrayList<>();
+        for (HexGameState state : storage.values()) {
+            if (filter.test(state)) {
+                result.add(transformer.apply(state));
+            }
         }
-        return path;
+        return result;
+    }
+
+    @Override
+    public void executeInTransaction(Runnable action) {
+        action.run();
     }
 }
