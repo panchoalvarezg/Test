@@ -3,7 +3,6 @@ package com.atraparalagato.impl.repository;
 import com.atraparalagato.base.repository.DataRepository;
 import com.atraparalagato.base.model.GameState;
 import com.atraparalagato.impl.model.HexGameState;
-import com.atraparalagato.impl.model.HexGameBoard;
 import com.atraparalagato.impl.model.HexPosition;
 
 import java.sql.*;
@@ -15,6 +14,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * Implementación de DataRepository usando base de datos H2.
+ */
 public class H2GameRepository extends DataRepository<GameState<HexPosition>, String> {
 
     private Connection connection;
@@ -24,21 +26,20 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
             this.connection = DriverManager.getConnection("jdbc:h2:file:./data/atrapar-al-gato-db", "sa", "password");
             initialize();
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new RuntimeException("Error al conectar a la base de datos H2", e);
         }
     }
 
     @Override
     protected void initialize() {
-        String query = "CREATE TABLE IF NOT EXISTS Games (" +
-                       "gameId VARCHAR(255) PRIMARY KEY NOT NULL," +
-                       "data JSON NOT NULL)";
-        try {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate(query);
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("""
+                CREATE TABLE IF NOT EXISTS Games (
+                    gameId VARCHAR(255) PRIMARY KEY NOT NULL,
+                    data JSON NOT NULL
+                )
+            """);
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new RuntimeException("Error al inicializar la base de datos H2", e);
         }
     }
@@ -49,31 +50,32 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
             throw new IllegalArgumentException("Estado no es HexGameState");
         }
 
-        String selectQuery = "SELECT COUNT(gameId) FROM Games WHERE gameId = '" + hexState.getGameId() + "';";
-
-        try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(selectQuery);
-
-            JSONObject serializedEntity = new JSONObject(hexState.getSerializableState());
+        try (Statement statement = connection.createStatement()) {
+            JSONObject serializedEntity = (JSONObject) hexState.getSerializableState();
 
             beforeSave(entity);
 
+            ResultSet resultSet = statement.executeQuery("""
+                SELECT COUNT(gameId) FROM Games
+                WHERE gameId = '%s';
+            """.formatted(hexState.getGameId()));
+
             if (resultSet.next() && resultSet.getInt(1) != 0) {
-                String updateQuery = "UPDATE Games SET data = '" + serializedEntity.toString() +
-                                     "' WHERE gameId = '" + hexState.getGameId() + "';";
-                statement.executeUpdate(updateQuery);
+                statement.executeUpdate("""
+                    UPDATE Games
+                    SET data = '%s'
+                    WHERE gameId = '%s';
+                """.formatted(serializedEntity.toString(), hexState.getGameId()));
             } else {
-                String insertQuery = "INSERT INTO Games (gameId, data) VALUES ('" +
-                                     hexState.getGameId() + "', '" + serializedEntity.toString() + "');";
-                statement.executeUpdate(insertQuery);
+                statement.executeUpdate("""
+                    INSERT INTO Games (gameId, data)
+                    VALUES ('%s', '%s');
+                """.formatted(hexState.getGameId(), serializedEntity.toString()));
             }
 
             afterSave(entity);
-
             return hexState;
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new RuntimeException("Error al guardar estado del juego", e);
         }
     }
@@ -82,21 +84,22 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
     public Optional<GameState<HexPosition>> findById(String id) {
         if (id == null) return Optional.empty();
 
-        String query = "SELECT data FROM Games WHERE gameId = '" + id + "' LIMIT 1;";
-        try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery(query);
+        try (Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("""
+                SELECT data FROM Games
+                WHERE gameId = '%s'
+                LIMIT 1;
+            """.formatted(id));
 
             if (resultSet.next()) {
                 String dataJSONString = resultSet.getString(1);
                 return Optional.of(deserializeGameState(dataJSONString, id));
-            } else {
-                return Optional.empty();
             }
         } catch (SQLException | JSONException e) {
-            e.printStackTrace();
             throw new RuntimeException("Error al buscar juego por id", e);
         }
+
+        return Optional.empty();
     }
 
     private HexGameState deserializeGameState(String serializedData, String gameId) {
@@ -113,15 +116,28 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
                 JSONArray pos = blockedArray.getJSONArray(i);
                 blocked.add(new HexPosition(pos.getInt(0), pos.getInt(1)));
             }
-            ((HexGameBoard) state.getGameBoard()).setBlockedPositions(blocked);
+            state.getGameBoard().setBlockedPositions(blocked);
 
             state.setMoveCount(json.getInt("moveCount"));
-            state.setBoardSize(json.getInt("boardSize"));
-
             return state;
         } catch (JSONException e) {
-            e.printStackTrace();
             throw new RuntimeException("Error al deserializar estado del juego", e);
         }
     }
+
+    @Override public void cleanup() {
+        // Se deja vacío para permitir compilación
+    }
+
+    @Override public List<GameState<HexPosition>> findAll() { throw new UnsupportedOperationException(); }
+    @Override public List<GameState<HexPosition>> findWhere(Predicate<GameState<HexPosition>> c) { throw new UnsupportedOperationException(); }
+    @Override public <R> List<R> findAndTransform(Predicate<GameState<HexPosition>> c, Function<GameState<HexPosition>, R> t) { throw new UnsupportedOperationException(); }
+    @Override public long countWhere(Predicate<GameState<HexPosition>> c) { throw new UnsupportedOperationException(); }
+    @Override public boolean deleteById(String id) { throw new UnsupportedOperationException(); }
+    @Override public long deleteWhere(Predicate<GameState<HexPosition>> c) { throw new UnsupportedOperationException(); }
+    @Override public boolean existsById(String id) { throw new UnsupportedOperationException(); }
+    @Override public <R> R executeInTransaction(Function<DataRepository<GameState<HexPosition>, String>, R> op) { throw new UnsupportedOperationException(); }
+    @Override public List<GameState<HexPosition>> findWithPagination(int page, int size) { throw new UnsupportedOperationException(); }
+    @Override public List<GameState<HexPosition>> findAllSorted(Function<GameState<HexPosition>, ? extends Comparable<?>> k, boolean asc) { throw new UnsupportedOperationException(); }
+    @Override public <R> List<R> executeCustomQuery(String query, Function<Object, R> mapper) { throw new UnsupportedOperationException(); }
 }
