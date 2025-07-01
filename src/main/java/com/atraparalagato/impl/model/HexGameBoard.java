@@ -11,12 +11,8 @@ import java.util.ArrayList;
 /**
  * Tablero hexagonal axial donde:
  * - Toda celda visible en el frontend (hexágono axial completo de radio igual a boardSize) es jugable/bloqueable.
- * - El gato puede escapar por cualquier celda exterior. Si sale del tablero, el juego termina y el jugador pierde.
  */
 public class HexGameBoard extends GameBoard<HexPosition> {
-
-    // Estado del juego (ajusta el tipo a tu implementación real)
-    private GameStatus gameStatus = GameStatus.IN_PROGRESS;
 
     public HexGameBoard(int size) {
         super(size);
@@ -29,21 +25,19 @@ public class HexGameBoard extends GameBoard<HexPosition> {
 
     /**
      * Una posición está en el tablero si pertenece al hexágono axial de radio igual a size.
-     * Esto permite bloquear y moverse por cualquier celda que el frontend muestre.
      */
     @Override
     protected boolean isPositionInBounds(HexPosition position) {
         int q = position.getQ();
         int r = position.getR();
         int s = -q - r;
-        int radius = size; // ¡Debe coincidir con boardSize del frontend!
+        int radius = size; // Debe coincidir con el boardSize del frontend
         int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
         return max <= radius;
     }
 
     @Override
     protected boolean isValidMove(HexPosition position) {
-        // Puedes bloquear cualquier celda visible en el tablero (blancas o grises)
         return isPositionInBounds(position) && !isBlocked(position);
     }
 
@@ -102,26 +96,5 @@ public class HexGameBoard extends GameBoard<HexPosition> {
             }
         }
         return true;
-    }
-
-    /**
-     * Mueve al gato y detecta si escapa del tablero.
-     * Llama este método después de calcular la nueva posición del gato.
-     */
-    public void moveCatAndCheckEscape(HexPosition newCatPosition) {
-        // Actualiza la posición del gato según tu lógica
-        this.catPosition = newCatPosition;
-
-        // Si el gato sale del tablero, el jugador pierde
-        if (!isPositionInBounds(newCatPosition)) {
-            gameStatus = GameStatus.PLAYER_LOST; // Ajusta a tu enum/clase real
-        }
-    }
-
-    /**
-     * Devuelve el estado actual del juego.
-     */
-    public GameStatus getGameStatus() {
-        return gameStatus;
     }
 }
