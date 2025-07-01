@@ -4,11 +4,16 @@ import com.atraparalagato.base.model.Position;
 import java.util.Objects;
 
 public class HexPosition extends Position {
-    private final int q, r;
+    private final int q;
+    private final int r;
 
     public static final HexPosition[] DIRECTIONS = {
-        new HexPosition(1, 0), new HexPosition(1, -1), new HexPosition(0, -1),
-        new HexPosition(-1, 0), new HexPosition(-1, 1), new HexPosition(0, 1)
+        new HexPosition(1, 0),
+        new HexPosition(1, -1),
+        new HexPosition(0, -1),
+        new HexPosition(-1, 0),
+        new HexPosition(-1, 1),
+        new HexPosition(0, 1)
     };
 
     public HexPosition(int q, int r) {
