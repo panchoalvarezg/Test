@@ -1,35 +1,49 @@
-package com.atraparalagato.impl.strategy;
+package com.atraparalagato.impl.repository;
 
-import com.atraparalagato.base.strategy.CatMovementStrategy;
-import com.atraparalagato.impl.model.HexPosition;
-import com.atraparalagato.impl.model.HexGameBoard;
+import com.atraparalagato.base.repository.DataRepository;
+import com.atraparalagato.impl.model.HexGameState;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class AStarCatMovement implements CatMovementStrategy<HexPosition, HexGameBoard> {
+public class H2GameRepository implements DataRepository<HexGameState, String> {
+    private final Map<String, HexGameState> storage = new HashMap<>();
 
     @Override
-    public List<HexPosition> getPossibleMoves(HexPosition from, HexGameBoard board) {
-        List<HexPosition> moves = new ArrayList<>();
-        for (HexPosition neighbor : board.getAdjacentPositions(from)) {
-            if (!board.isBlocked(neighbor)) {
-                moves.add(neighbor);
-            }
-        }
-        return moves;
+    public void save(HexGameState state) {
+        storage.put(state.getGameId(), state);
     }
 
     @Override
-    public HexPosition selectBestMove(HexPosition from, HexGameBoard board, List<HexPosition> possibleMoves) {
-        int n = board.getSize();
-        HexPosition best = null;
-        double bestScore = Double.POSITIVE_INFINITY;
-        for (HexPosition move : possibleMoves) {
-            double score = Math.min(Math.min(move.getQ(), move.getR()), Math.min(n - 1 - move.getQ(), n - 1 - move.getR()));
-            if (score < bestScore) {
-                bestScore = score;
-                best = move;
-            }
+    public Optional<HexGameState> findById(String id) {
+        return Optional.ofNullable(storage.get(id));
+    }
+
+    @Override
+    public List<HexGameState> findAll() {
+        return new ArrayList<>(storage.values());
+    }
+
+    @Override
+    public List<HexGameState> findWhere(Predicate<HexGameState> condition) {
+        List<HexGameState> result = new ArrayList<>();
+        for (HexGameState state : storage.values()) {
+            if (condition.test(state)) result.add(state);
         }
-        return best;
+        return result;
+    }
+
+    @Override
+    public <R> List<R> findAndTransform(Predicate<HexGameState> filter, Function<HexGameState, R> transformer) {
+        List<R> result = new ArrayList<>();
+        for (HexGameState state : storage.values()) {
+            if (filter.test(state)) result.add(transformer.apply(state));
+        }
+        return result;
+    }
+
+    @Override
+    public void executeInTransaction(Runnable action) {
+        action.run();
     }
 }
