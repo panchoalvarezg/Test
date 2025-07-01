@@ -5,7 +5,7 @@ import com.atraparalagato.impl.model.HexPosition;
 import com.atraparalagato.impl.model.HexGameBoard;
 import java.util.*;
 
-public class AStarCatMovement implements CatMovementStrategy<HexPosition> {
+public class BFSCatMovement implements CatMovementStrategy<HexPosition> {
     @Override
     public List<HexPosition> getPossibleMoves(HexPosition from, Object board) {
         HexGameBoard hexBoard = (HexGameBoard) board;
@@ -20,17 +20,6 @@ public class AStarCatMovement implements CatMovementStrategy<HexPosition> {
 
     @Override
     public HexPosition selectBestMove(HexPosition from, Object board, List<HexPosition> possibleMoves) {
-        HexGameBoard hexBoard = (HexGameBoard) board;
-        int n = hexBoard.getSize();
-        HexPosition best = null;
-        double bestScore = Double.POSITIVE_INFINITY;
-        for (HexPosition move : possibleMoves) {
-            double score = Math.min(Math.min(move.getQ(), move.getR()), Math.min(n - 1 - move.getQ(), n - 1 - move.getR()));
-            if (score < bestScore) {
-                bestScore = score;
-                best = move;
-            }
-        }
-        return best;
+        return possibleMoves.isEmpty() ? null : possibleMoves.get(0);
     }
 }
