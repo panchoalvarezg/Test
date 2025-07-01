@@ -8,6 +8,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.ArrayList;
 
+/**
+ * Tablero hexagonal axial con área jugable restringida:
+ * - Solo se pueden bloquear celdas del anillo central y del anillo de borde "válido" (radius-1).
+ * - El anillo más externo (radius) es decorativo: ni se puede bloquear ni el gato puede escapar por ahí.
+ */
 public class HexGameBoard extends GameBoard<HexPosition> {
 
     public HexGameBoard(int size) {
@@ -19,14 +24,19 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         return new HashSet<>();
     }
 
+    /**
+     * Solo permite bloquear y jugar en celdas dentro del anillo central y el anillo de borde válido (radius-1).
+     * El anillo más exterior (radius) NO es jugable ni bloqueable.
+     */
     @Override
     protected boolean isPositionInBounds(HexPosition position) {
         int q = position.getQ();
         int r = position.getR();
+        int s = -q - r;
         int radius = (size - 1) / 2;
-        // Permite posiciones axiales centradas, como usa el frontend (pueden ser negativas)
-        // Ejemplo: para size=5, radius=2, admite q y r entre -2 y 2, con |q|<=2, |r|<=2, |q+r|<=2
-        return Math.abs(q) <= radius && Math.abs(r) <= radius && Math.abs(-q - r) <= radius;
+        int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
+        // Solo jugables las celdas donde max <= radius-1
+        return max <= radius - 1;
     }
 
     @Override
@@ -46,7 +56,9 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         for (int q = -radius; q <= radius; q++) {
             for (int r = -radius; r <= radius; r++) {
                 int s = -q - r;
-                if (Math.abs(s) <= radius) {
+                int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
+                // Solo celdas jugables (no las decorativas exterior ni fuera del hexágono)
+                if (max <= radius - 1) {
                     HexPosition pos = new HexPosition(q, r);
                     if (condition.test(pos)) {
                         list.add(pos);
@@ -78,6 +90,9 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         return blockedPositions.contains(position);
     }
 
+    /**
+     * El gato está atrapado si todas las adyacentes jugables están bloqueadas.
+     */
     public boolean isCatTrapped(HexPosition catPos) {
         for (HexPosition n : getAdjacentPositions(catPos)) {
             if (!isBlocked(n)) {
@@ -87,11 +102,16 @@ public class HexGameBoard extends GameBoard<HexPosition> {
         return true;
     }
 
+    /**
+     * El borde válido es el anillo de radio radius-1.
+     * El anillo más exterior (radius) es decorativo y no es considerado borde para escape.
+     */
     public boolean isAtEdge(HexPosition pos) {
-        int radius = (size - 1) / 2;
         int q = pos.getQ();
         int r = pos.getR();
         int s = -q - r;
-        return Math.abs(q) == radius || Math.abs(r) == radius || Math.abs(s) == radius;
+        int radius = (size - 1) / 2;
+        int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
+        return max == radius - 1;
     }
 }
