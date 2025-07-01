@@ -3,21 +3,12 @@ package com.atraparalagato.impl.model;
 import com.atraparalagato.base.model.Position;
 import java.util.Objects;
 
-/**
- * Representa una posición en un tablero hexagonal usando coordenadas axiales (q, r).
- */
 public class HexPosition extends Position {
-
-    private final int q;
-    private final int r;
+    private final int q, r;
 
     public static final HexPosition[] DIRECTIONS = {
-        new HexPosition(1, 0),    // derecha
-        new HexPosition(1, -1),   // arriba-derecha
-        new HexPosition(0, -1),   // arriba
-        new HexPosition(-1, 0),   // izquierda
-        new HexPosition(-1, 1),   // abajo-izquierda
-        new HexPosition(0, 1)     // abajo
+        new HexPosition(1, 0), new HexPosition(1, -1), new HexPosition(0, -1),
+        new HexPosition(-1, 0), new HexPosition(-1, 1), new HexPosition(0, 1)
     };
 
     public HexPosition(int q, int r) {
@@ -25,50 +16,47 @@ public class HexPosition extends Position {
         this.r = r;
     }
 
-    public int getQ() {
-        return q;
-    }
+    public int getQ() { return q; }
+    public int getR() { return r; }
 
-    public int getR() {
-        return r;
-    }
-
-    /**
-     * Calcula la distancia hexagonal (axial) entre dos posiciones.
-     */
-    public int distanceTo(HexPosition other) {
-        int dq = Math.abs(this.q - other.q);
-        int dr = Math.abs(this.r - other.r);
-        int ds = Math.abs((-this.q - this.r) - (-other.q - other.r));
+    @Override
+    public double distanceTo(Position other) {
+        if (!(other instanceof HexPosition o)) return Double.POSITIVE_INFINITY;
+        int dq = Math.abs(this.q - o.q);
+        int dr = Math.abs(this.r - o.r);
+        int ds = Math.abs((-this.q - this.r) - (-o.q - o.r));
         return Math.max(dq, Math.max(dr, ds));
     }
 
-    /**
-     * Suma dos posiciones (para obtener vecinos).
-     */
-    public HexPosition add(HexPosition other) {
-        return new HexPosition(this.q + other.q, this.r + other.r);
-    }
-
-    /**
-     * Determina si la posición está dentro de los límites del tablero de tamaño boardSize.
-     */
     @Override
-    public boolean isWithinBounds(int boardSize) {
-        return q >= 0 && q < boardSize && r >= 0 && r < boardSize;
+    public Position add(Position other) {
+        if (!(other instanceof HexPosition o)) throw new IllegalArgumentException();
+        return new HexPosition(this.q + o.q, this.r + o.r);
     }
 
-    /**
-     * Determina si esta posición es adyacente a otra (usado por la base).
-     */
+    @Override
+    public Position subtract(Position other) {
+        if (!(other instanceof HexPosition o)) throw new IllegalArgumentException();
+        return new HexPosition(this.q - o.q, this.r - o.r);
+    }
+
     @Override
     public boolean isAdjacentTo(Position other) {
-        if (!(other instanceof HexPosition)) return false;
-        HexPosition o = (HexPosition) other;
+        if (!(other instanceof HexPosition o)) return false;
         for (HexPosition dir : DIRECTIONS) {
             if (o.q == this.q + dir.q && o.r == this.r + dir.r) return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean isWithinBounds(int maxSize) {
+        return q >= 0 && q < maxSize && r >= 0 && r < maxSize;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(q, r);
     }
 
     @Override
@@ -77,11 +65,6 @@ public class HexPosition extends Position {
         if (!(o instanceof HexPosition)) return false;
         HexPosition that = (HexPosition) o;
         return q == that.q && r == that.r;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(q, r);
     }
 
     @Override
