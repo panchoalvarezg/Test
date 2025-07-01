@@ -1,74 +1,49 @@
-package com.atraparalagato.impl.service;
+package com.atraparalagato.impl.repository;
 
-import com.atraparalagato.base.model.Position;
-import com.atraparalagato.impl.model.HexPosition;
-import com.atraparalagato.impl.model.HexGameBoard;
-import com.atraparalagato.impl.model.HexGameState;
 import com.atraparalagato.base.repository.DataRepository;
-import com.atraparalagato.base.strategy.CatMovementStrategy;
+import com.atraparalagato.impl.model.HexGameState;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-public class HexGameService {
+public class H2GameRepository implements DataRepository<HexGameState, String> {
+    private final Map<String, HexGameState> storage = new HashMap<>();
 
-    private final DataRepository<HexGameState> repository;
-    private final CatMovementStrategy<HexPosition> catStrategy;
-    private HexGameState currentState;
-
-    public HexGameService(DataRepository<HexGameState> repository,
-                          CatMovementStrategy<HexPosition> catStrategy,
-                          int boardSize,
-                          HexPosition catStart,
-                          String gameId) {
-        this.repository = repository;
-        this.catStrategy = catStrategy;
-        HexGameBoard board = new HexGameBoard(boardSize);
-        this.currentState = new HexGameState(gameId, board, catStart);
+    @Override
+    public void save(HexGameState state) {
+        storage.put(state.getGameId(), state);
     }
 
-    public boolean isValidMove(HexPosition pos) {
-        return currentState.canExecuteMove(pos);
+    @Override
+    public Optional<HexGameState> findById(String id) {
+        return Optional.ofNullable(storage.get(id));
     }
 
-    public boolean executeMove(HexPosition pos) {
-        boolean result = currentState.executeMove(pos);
-        if (result) {
-            catMove();
+    @Override
+    public List<HexGameState> findAll() {
+        return new ArrayList<>(storage.values());
+    }
+
+    @Override
+    public List<HexGameState> findWhere(Predicate<HexGameState> condition) {
+        List<HexGameState> result = new ArrayList<>();
+        for (HexGameState state : storage.values()) {
+            if (condition.test(state)) result.add(state);
         }
         return result;
     }
 
-    public void catMove() {
-        List<HexPosition> moves = catStrategy.getPossibleMoves(currentState.getCatPosition(), currentState);
-        HexPosition best = catStrategy.selectBestMove(currentState.getCatPosition(), currentState, moves);
-        if (best != null && !((HexGameBoard) currentState.board).isBlocked(best)) {
-            currentState.setCatPosition(best);
-            currentState.updateGameStatus();
+    @Override
+    public <R> List<R> findAndTransform(Predicate<HexGameState> filter, Function<HexGameState, R> transformer) {
+        List<R> result = new ArrayList<>();
+        for (HexGameState state : storage.values()) {
+            if (filter.test(state)) result.add(transformer.apply(state));
         }
+        return result;
     }
 
-    public HexPosition getSuggestedMove() {
-        List<HexPosition> moves = catStrategy.getPossibleMoves(currentState.getCatPosition(), currentState);
-        return catStrategy.selectBestMove(currentState.getCatPosition(), currentState, moves);
-    }
-
-    public HexPosition getTargetPosition() {
-        return currentState.getCatPosition();
-    }
-
-    public Map<String, Object> getGameStatistics() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("moves", currentState.getMoveCount());
-        stats.put("score", currentState.calculateScore());
-        stats.put("finished", currentState.isGameFinished());
-        stats.put("playerWon", currentState.hasPlayerWon());
-        return stats;
-    }
-
-    public void saveState() {
-        repository.save(currentState);
-    }
-
-    public Optional<HexGameState> loadState(String id) {
-        return repository.findById(id);
+    @Override
+    public void executeInTransaction(Runnable action) {
+        action.run();
     }
 }
