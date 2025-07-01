@@ -80,12 +80,17 @@ public class H2GameRepository extends DataRepository<HexGameState, String> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<HexGameState> findAllSorted(Function<HexGameState, ? extends Comparable<?>> sortKeyExtractor, boolean ascending) {
         List<HexGameState> all = findAll();
         all.sort((o1, o2) -> {
-            Comparable<?> key1 = sortKeyExtractor.apply(o1);
-            Comparable<?> key2 = sortKeyExtractor.apply(o2);
-            int cmp = key1.compareTo(key2);
+            Comparable key1 = sortKeyExtractor.apply(o1);
+            Comparable key2 = sortKeyExtractor.apply(o2);
+            int cmp;
+            if (key1 == null && key2 == null) cmp = 0;
+            else if (key1 == null) cmp = -1;
+            else if (key2 == null) cmp = 1;
+            else cmp = key1.compareTo(key2);
             return ascending ? cmp : -cmp;
         });
         return all;
