@@ -164,6 +164,9 @@ class Game {
         // Different styling for border vs playable cells
         if (position.type === 'border') {
             cell.className = 'hex-cell border-cell';
+            cell.style.opacity = '0.3';
+            // Permitir clics en las celdas de borde
+            // cell.style.pointerEvents = 'none'; // <-- Línea eliminada para permitir clics
         } else {
             cell.className = 'hex-cell';
         }
@@ -185,18 +188,15 @@ class Game {
             cell.classList.add('cat');
         } else if (isBlocked) {
             cell.classList.add('blocked');
-        } else if (position.type === 'playable') {
-            // Only playable cells can be clicked
+        } else {
+            // Permitir clicks en cualquier celda que no esté bloqueada ni tenga el gato (incluyendo border y playable)
             const moveHandler = this.createMoveHandler(position.q, position.r);
             cell.addEventListener('click', moveHandler);
         }
         
-        // Border cells are just visual indicators
-        if (position.type === 'border') {
-            cell.style.opacity = '0.3';
-            cell.style.pointerEvents = 'none';
-        }
-        
+        // Border cells son solo visualmente diferentes, pero ahora son bloqueables
+        // (si quieres que sean menos visibles, puedes ajustar solo opacidad)
+
         return cell;
     }
     
@@ -395,4 +395,4 @@ const initializeGame = () => {
 };
 
 // Module Pattern: Encapsulate initialization
-window.addEventListener('load', initializeGame); 
+window.addEventListener('load', initializeGame);
