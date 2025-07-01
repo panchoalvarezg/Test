@@ -1,7 +1,6 @@
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameState;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +33,8 @@ public class HexGameState extends GameState<HexPosition> {
         if (nextCatPos != null) {
             setCatPosition(nextCatPos);
         }
+        // Actualiza el estado del juego después de mover el gato
+        updateGameStatus();
         // Retorna true para indicar que la jugada fue válida
         return true;
     }
@@ -56,10 +57,11 @@ public class HexGameState extends GameState<HexPosition> {
 
     @Override
     protected void updateGameStatus() {
-        if (board.isCatTrapped(catPosition)) {
-            setStatus(GameStatus.PLAYER_WON);
-        } else if (board.isAtEdge(catPosition)) {
+        // PRIMERO revisa si el gato llegó al borde. Solo pierdes si el gato está en el borde.
+        if (board.isAtEdge(catPosition)) {
             setStatus(GameStatus.PLAYER_LOST);
+        } else if (board.isCatTrapped(catPosition)) {
+            setStatus(GameStatus.PLAYER_WON);
         } else {
             setStatus(GameStatus.IN_PROGRESS);
         }
