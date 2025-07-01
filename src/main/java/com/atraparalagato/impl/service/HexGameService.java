@@ -5,6 +5,8 @@ import com.atraparalagato.base.service.GameService;
 import com.atraparalagato.impl.model.*;
 import com.atraparalagato.impl.strategy.AStarCatMovement;
 
+import java.util.Optional;
+
 public class HexGameService extends GameService<HexPosition> {
 
     private HexGameState gameState;
@@ -16,8 +18,7 @@ public class HexGameService extends GameService<HexPosition> {
         HexPosition catPos = new HexPosition(5, 5);
         this.gameState = new HexGameState(board, catPos);
         this.catMovement = new AStarCatMovement();
-        catMovement.setBoard(board);
-        catMovement.setGameState(gameState);
+        this.catMovement.initialize(board, gameState);
     }
 
     @Override
@@ -26,8 +27,8 @@ public class HexGameService extends GameService<HexPosition> {
     }
 
     @Override
-    public HexPosition getSuggestedMove(String playerId) {
-        return catMovement.selectBestMove(gameState.getCatPosition());
+    public Optional<HexPosition> getSuggestedMove(String playerId) {
+        return Optional.ofNullable(catMovement.selectBestMove(gameState.getCatPosition()));
     }
 
     @Override
