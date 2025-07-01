@@ -13,6 +13,8 @@ public class HexGameState extends GameState<HexPosition> {
     private HexGameBoard board;
     private boolean isFinished = false;
     private boolean playerWon = false;
+    private int moveCount = 0;
+    private int boardSize = 11;
 
     public HexGameState(HexGameBoard board, HexPosition start) {
         super("hex-game");
@@ -29,6 +31,7 @@ public class HexGameState extends GameState<HexPosition> {
     public boolean performMove(HexPosition position) {
         if (!canExecuteMove(position)) return false;
         board.executeMove(position);
+        moveCount++;
         updateGameStatus();
         return true;
     }
@@ -66,7 +69,7 @@ public class HexGameState extends GameState<HexPosition> {
 
     @Override
     public int calculateScore() {
-        return 0;
+        return moveCount;
     }
 
     @Override
@@ -87,4 +90,16 @@ public class HexGameState extends GameState<HexPosition> {
     public GameBoard<HexPosition> getBoard() {
         return board;
     }
-} 
+
+    public int getMoveCount() {
+        return moveCount;
+    }
+
+    public void setMoveCount(int moveCount) {
+        this.moveCount = moveCount;
+    }
+
+    public void setBoardSize(int size) {
+        this.boardSize = size;
+    }
+}
