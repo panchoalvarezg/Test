@@ -1,49 +1,25 @@
-package com.atraparalagato.impl.repository;
+package com.atraparalagato.impl.strategy;
 
-import com.atraparalagato.base.repository.DataRepository;
-import com.atraparalagato.impl.model.HexGameState;
+import com.atraparalagato.base.strategy.CatMovementStrategy;
+import com.atraparalagato.impl.model.HexPosition;
+import com.atraparalagato.impl.model.HexGameBoard;
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
-public class H2GameRepository implements DataRepository<HexGameState, String> {
-    private final Map<String, HexGameState> storage = new HashMap<>();
-
+public class BFSCatMovement implements CatMovementStrategy<HexPosition> {
     @Override
-    public void save(HexGameState state) {
-        storage.put(state.getGameId(), state);
-    }
-
-    @Override
-    public Optional<HexGameState> findById(String id) {
-        return Optional.ofNullable(storage.get(id));
-    }
-
-    @Override
-    public List<HexGameState> findAll() {
-        return new ArrayList<>(storage.values());
-    }
-
-    @Override
-    public List<HexGameState> findWhere(Predicate<HexGameState> condition) {
-        List<HexGameState> result = new ArrayList<>();
-        for (HexGameState state : storage.values()) {
-            if (condition.test(state)) result.add(state);
+    public List<HexPosition> getPossibleMoves(HexPosition from, Object board) {
+        HexGameBoard hexBoard = (HexGameBoard) board;
+        List<HexPosition> moves = new ArrayList<>();
+        for (HexPosition neighbor : hexBoard.getAdjacentPositions(from)) {
+            if (!hexBoard.isBlocked(neighbor)) {
+                moves.add(neighbor);
+            }
         }
-        return result;
+        return moves;
     }
 
     @Override
-    public <R> List<R> findAndTransform(Predicate<HexGameState> filter, Function<HexGameState, R> transformer) {
-        List<R> result = new ArrayList<>();
-        for (HexGameState state : storage.values()) {
-            if (filter.test(state)) result.add(transformer.apply(state));
-        }
-        return result;
-    }
-
-    @Override
-    public void executeInTransaction(Runnable action) {
-        action.run();
+    public HexPosition selectBestMove(HexPosition from, Object board, List<HexPosition> possibleMoves) {
+        return possibleMoves.isEmpty() ? null : possibleMoves.get(0);
     }
 }
