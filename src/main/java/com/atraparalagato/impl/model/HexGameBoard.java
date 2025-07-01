@@ -27,7 +27,7 @@ public class HexGameBoard extends GameBoard<HexPosition> {
 
     @Override
     protected void executeMove(HexPosition pos) {
-        blockedPositions.add(pos);
+        getBlockedPositions().add(pos);
     }
 
     @Override
@@ -54,6 +54,17 @@ public class HexGameBoard extends GameBoard<HexPosition> {
 
     @Override
     public boolean isBlocked(HexPosition pos) {
-        return blockedPositions.contains(pos);
+        return getBlockedPositions().contains(pos);
+    }
+
+    // Método público para acceder a posiciones bloqueadas
+    public Set<HexPosition> getBlockedPositionsPublic() {
+        return new HashSet<>(getBlockedPositions());
+    }
+
+    // Si necesitas limpiar y setear las posiciones bloqueadas desde HexGameState
+    public void setBlockedPositions(Collection<HexPosition> positions) {
+        getBlockedPositions().clear();
+        getBlockedPositions().addAll(positions);
     }
 }
