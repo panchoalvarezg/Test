@@ -56,4 +56,8 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     public boolean isBlocked(HexPosition pos) {
         return blockedPositions.contains(pos);
     }
+
+    public Set<HexPosition> getBlockedPositions() {
+        return Collections.unmodifiableSet(blockedPositions);
+    }
 }
