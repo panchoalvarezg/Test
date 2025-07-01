@@ -1,7 +1,6 @@
+// AStarCatMovement.java
 package com.atraparalagato.impl.strategy;
 
-import com.atraparalagato.base.model.GameBoard;
-import com.atraparalagato.base.model.GameState;
 import com.atraparalagato.base.strategy.CatMovementStrategy;
 import com.atraparalagato.impl.model.HexPosition;
 
@@ -15,41 +14,12 @@ public class AStarCatMovement extends CatMovementStrategy<HexPosition> {
     @Override
     public HexPosition selectBestMove(HexPosition currentPosition) {
         List<HexPosition> neighbors = board.getAdjacentPositions(currentPosition);
-        if (neighbors.isEmpty()) {
-            return currentPosition; // no hay movimientos posibles
-        }
-
-        // Selección aleatoria por ahora — luego reemplazar con A*
+        if (neighbors.isEmpty()) return currentPosition;
         return neighbors.get(random.nextInt(neighbors.size()));
     }
 
-    // Métodos que pueden implementarse más adelante
-
     @Override
-    protected double getHeuristic(HexPosition from, HexPosition to) {
-        return from.distanceTo(to); // distancia Manhattan como heurística
-    }
-
-    @Override
-    protected boolean isGoal(HexPosition position) {
-        // Meta: escapar del borde
-        int size = 11;
-        return position.getQ() == 0 || position.getR() == 0
-            || position.getQ() == size - 1 || position.getR() == size - 1;
-    }
-
-    @Override
-    public boolean hasPathToGoal(HexPosition from) {
-        return !board.getAdjacentPositions(from).isEmpty(); // dummy
-    }
-
-    @Override
-    public List<HexPosition> getFullPath(HexPosition from) {
+    public List<HexPosition> getFullPath(HexPosition from, HexPosition to) {
         return List.of(); // aún no implementado
-    }
-
-    @Override
-    public List<HexPosition> getPossibleMoves(HexPosition from) {
-        return board.getAdjacentPositions(from);
     }
 }
