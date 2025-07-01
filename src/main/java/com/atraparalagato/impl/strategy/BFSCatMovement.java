@@ -1,71 +1,27 @@
 package com.atraparalagato.impl.strategy;
 
-import com.atraparalagato.base.strategy.CatMovementStrategy;
-import com.atraparalagato.impl.model.HexGameBoard;
+import com.atraparalagato.base.model.Position;
 import com.atraparalagato.impl.model.HexPosition;
-
+import com.atraparalagato.impl.model.HexGameBoard;
 import java.util.*;
-import java.util.function.Predicate;
 
-/**
- * Estrategia de movimiento del gato usando BFS (camino más corto).
- */
-public class BFSCatMovement implements CatMovementStrategy<HexPosition, HexGameBoard> {
+public class BFSCatMovement implements CatMovementStrategy<HexPosition> {
 
     @Override
-    public List<HexPosition> getPossibleMoves(HexPosition from, HexGameBoard board) {
-        return board.getAdjacentPositions(from).stream()
-                .filter(p -> !board.isBlocked(p))
-                .toList();
-    }
-
-    @Override
-    public HexPosition selectBestMove(HexPosition from, HexGameBoard board, List<HexPosition> possibleMoves) {
-        List<HexPosition> path = getFullPath(from, board);
-        return path.size() > 1 ? path.get(1) : null;
-    }
-
-    @Override
-    public boolean hasPathToGoal(HexPosition from, HexGameBoard board) {
-        return !getFullPath(from, board).isEmpty();
-    }
-
-    @Override
-    public List<HexPosition> getFullPath(HexPosition from, HexGameBoard board) {
-        Predicate<HexPosition> isGoal = pos -> {
-            int n = board.getBoardSize();
-            return pos.getQ() == 0 || pos.getR() == 0 || pos.getQ() == n - 1 || pos.getR() == n - 1;
-        };
-
-        Queue<HexPosition> queue = new ArrayDeque<>();
-        Map<HexPosition, HexPosition> parents = new HashMap<>();
-        Set<HexPosition> visited = new HashSet<>();
-        queue.add(from);
-        visited.add(from);
-
-        while (!queue.isEmpty()) {
-            HexPosition current = queue.poll();
-            if (isGoal.test(current)) {
-                return buildPath(current, parents);
-            }
-            for (HexPosition neighbor : board.getAdjacentPositions(current)) {
-                if (!visited.contains(neighbor) && !board.isBlocked(neighbor)) {
-                    visited.add(neighbor);
-                    parents.put(neighbor, current);
-                    queue.add(neighbor);
-                }
+    public List<HexPosition> getPossibleMoves(HexPosition from, Object boardObj) {
+        HexGameBoard board = (HexGameBoard) boardObj;
+        List<HexPosition> moves = new ArrayList<>();
+        for (HexPosition neighbor : board.getAdjacentPositions(from)) {
+            if (!board.isBlocked(neighbor)) {
+                moves.add(neighbor);
             }
         }
-        return Collections.emptyList();
+        return moves;
     }
 
-    private List<HexPosition> buildPath(HexPosition goal, Map<HexPosition, HexPosition> parents) {
-        LinkedList<HexPosition> path = new LinkedList<>();
-        HexPosition current = goal;
-        while (current != null) {
-            path.addFirst(current);
-            current = parents.get(current);
-        }
-        return path;
+    @Override
+    public HexPosition selectBestMove(HexPosition from, Object boardObj, List<HexPosition> possibleMoves) {
+        // BFS: return the first available move
+        return possibleMoves.isEmpty() ? null : possibleMoves.get(0);
     }
 }
