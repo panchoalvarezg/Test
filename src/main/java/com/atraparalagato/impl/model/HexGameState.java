@@ -1,13 +1,10 @@
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameState;
+import java.io.Serializable;
 import java.util.*;
-import java.util.function.Predicate;
 
-/**
- * Estado avanzado para el juego Atrapar al Gato.
- */
-public class HexGameState extends GameState<HexPosition, HexGameBoard> {
+public class HexGameState extends GameState<HexPosition> implements Serializable {
 
     private HexPosition catPosition;
     private boolean finished;
@@ -26,13 +23,13 @@ public class HexGameState extends GameState<HexPosition, HexGameBoard> {
 
     @Override
     public boolean canExecuteMove(HexPosition pos) {
-        return !board.isBlocked(pos) && board.isPositionInBounds(pos) && !pos.equals(catPosition);
+        return !getBoard().isBlocked(pos) && getBoard().isPositionInBounds(pos) && !pos.equals(catPosition);
     }
 
     @Override
     public void performMove(HexPosition pos) {
         if (!canExecuteMove(pos)) throw new IllegalArgumentException("Movimiento inválido");
-        board.blockPosition(pos);
+        ((HexGameBoard) getBoard()).blockPosition(pos);
         moveCount++;
         updateGameStatus();
     }
@@ -56,13 +53,13 @@ public class HexGameState extends GameState<HexPosition, HexGameBoard> {
 
     private boolean isAtEdge(HexPosition pos) {
         int q = pos.getQ(), r = pos.getR();
-        int n = board.getBoardSize();
+        int n = ((HexGameBoard) getBoard()).getBoardSize();
         return q == 0 || r == 0 || q == n - 1 || r == n - 1;
     }
 
     private List<HexPosition> getAvailableCatMoves() {
-        return board.getAdjacentPositions(catPosition).stream()
-                .filter(p -> !board.isBlocked(p))
+        return ((HexGameBoard) getBoard()).getAdjacentPositions(catPosition).stream()
+                .filter(p -> !((HexGameBoard) getBoard()).isBlocked(p))
                 .toList();
     }
 
@@ -95,7 +92,7 @@ public class HexGameState extends GameState<HexPosition, HexGameBoard> {
     public Object getSerializableState() {
         Map<String, Object> state = new HashMap<>();
         state.put("cat", catPosition);
-        state.put("blocked", new ArrayList<>(board.getBlockedPositions()));
+        state.put("blocked", new ArrayList<>(((HexGameBoard) getBoard()).getBlockedPositions()));
         state.put("finished", finished);
         state.put("playerWon", playerWon);
         state.put("moveCount", moveCount);
@@ -112,7 +109,7 @@ public class HexGameState extends GameState<HexPosition, HexGameBoard> {
         this.playerWon = Boolean.TRUE.equals(map.get("playerWon"));
         this.moveCount = (Integer) map.getOrDefault("moveCount", 0);
         this.score = (Integer) map.getOrDefault("score", 0);
-        board.setBlockedPositions(new HashSet<>((List<HexPosition>) map.get("blocked")));
+        ((HexGameBoard) getBoard()).setBlockedPositions(new HashSet<>((List<HexPosition>) map.get("blocked")));
     }
 
     public int getMoveCount() { return moveCount; }
