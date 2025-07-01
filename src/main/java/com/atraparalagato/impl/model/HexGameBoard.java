@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 /**
  * Tablero hexagonal axial donde:
- * - Toda celda visible en el frontend (hexágono axial completo de radio igual a boardSize) es jugable/bloqueable.
+ * - Toda celda visible en el frontend (hexágono axial completo de radio igual a boardSize - 1) es jugable/bloqueable.
  */
 public class HexGameBoard extends GameBoard<HexPosition> {
 
@@ -24,14 +24,15 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     }
 
     /**
-     * Una posición está en el tablero si pertenece al hexágono axial de radio igual a size.
+     * Una posición está en el tablero si pertenece al hexágono axial de radio igual a (size - 1).
+     * Esto permite bloquear y moverse por cualquier celda que el frontend muestre.
      */
     @Override
     protected boolean isPositionInBounds(HexPosition position) {
         int q = position.getQ();
         int r = position.getR();
         int s = -q - r;
-        int radius = size; // Debe coincidir con el boardSize del frontend
+        int radius = size - 1; // El radio visual es 1 menos que el size lógico
         int max = Math.max(Math.abs(q), Math.max(Math.abs(r), Math.abs(s)));
         return max <= radius;
     }
@@ -49,7 +50,7 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     @Override
     public List<HexPosition> getPositionsWhere(Predicate<HexPosition> condition) {
         List<HexPosition> list = new ArrayList<>();
-        int radius = size;
+        int radius = size - 1;
         for (int q = -radius; q <= radius; q++) {
             for (int r = -radius; r <= radius; r++) {
                 int s = -q - r;
