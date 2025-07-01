@@ -1,30 +1,34 @@
-// HexGameState.java
+
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameBoard;
 import com.atraparalagato.base.model.GameState;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class HexGameState extends GameState<HexPosition> {
 
+    private String gameId;
+    private int moveCount = 0;
+    private boolean finished = false;
+    private boolean playerWon = false;
     private HexPosition catPosition;
     private HexGameBoard board;
-    private boolean isFinished = false;
-    private boolean playerWon = false;
-    private int moveCount = 0;
-    private int boardSize = 11;
 
-    public HexGameState(HexGameBoard board, HexPosition start) {
-        super("hex-game");
-        this.board = board;
-        this.catPosition = start;
+    public HexGameState(String gameId, int boardSize) {
+        this.gameId = gameId;
+        this.board = new HexGameBoard(boardSize);
+        this.catPosition = new HexPosition(boardSize / 2, boardSize / 2);
+    }
+
+    @Override
+    public String getGameId() {
+        return gameId;
     }
 
     @Override
     public boolean canExecuteMove(HexPosition position) {
-        return board.isValidMove(position);
+        return !finished && board.isValidMove(position);
     }
 
     @Override
@@ -39,10 +43,10 @@ public class HexGameState extends GameState<HexPosition> {
     @Override
     public void updateGameStatus() {
         if (!board.isPositionInBounds(catPosition)) {
-            isFinished = true;
+            finished = true;
             playerWon = false;
         } else if (board.isBlocked(catPosition)) {
-            isFinished = true;
+            finished = true;
             playerWon = true;
         }
     }
@@ -59,7 +63,7 @@ public class HexGameState extends GameState<HexPosition> {
 
     @Override
     public boolean isGameFinished() {
-        return isFinished;
+        return finished;
     }
 
     @Override
@@ -75,31 +79,29 @@ public class HexGameState extends GameState<HexPosition> {
     @Override
     public Map<String, Object> getSerializableState() {
         Map<String, Object> state = new HashMap<>();
-        state.put("cat", Map.of("q", catPosition.getQ(), "r", catPosition.getR()));
-        state.put("blocked", board.getPositionsWhere(pos -> !board.isValidMove(pos)));
-        state.put("status", isFinished ? (playerWon ? "WON" : "LOST") : "PLAYING");
+        state.put("gameId", gameId);
+        state.put("moveCount", moveCount);
+        state.put("catPosition", List.of(catPosition.getQ(), catPosition.getR()));
+        state.put("blockedPositions", board.getPositionsWhere(p -> !board.isValidMove(p)));
+        state.put("boardSize", board.getBoardSize());
         return state;
     }
 
     @Override
-    public void restoreFromSerializable(Object state) {
-        throw new UnsupportedOperationException("restoreFromSerializable no implementado todavía");
+    public void restoreFromSerializable(Object data) {
+        throw new UnsupportedOperationException("restoreFromSerializable no implementado aún");
     }
 
     @Override
-    public GameBoard<HexPosition> getBoard() {
+    public GameBoard<HexPosition> getGameBoard() {
         return board;
     }
 
-    public int getMoveCount() {
-        return moveCount;
-    }
-
-    public void setMoveCount(int moveCount) {
-        this.moveCount = moveCount;
+    public void setMoveCount(int count) {
+        this.moveCount = count;
     }
 
     public void setBoardSize(int size) {
-        this.boardSize = size;
+        this.board = new HexGameBoard(size);
     }
 }
