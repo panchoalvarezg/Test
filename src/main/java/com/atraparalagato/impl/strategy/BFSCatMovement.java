@@ -43,4 +43,9 @@ public class BFSCatMovement extends CatMovementStrategy<HexPosition> {
     public boolean hasPathToGoal(HexPosition from) {
         return !board.getAdjacentPositions(from).isEmpty();
     }
+
+    @Override
+    public double getMoveCost(HexPosition from, HexPosition to) {
+        return 1.0;
+    }
 }
