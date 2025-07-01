@@ -1,6 +1,6 @@
 package com.atraparalagato.impl.service;
 
-import com.atraparalagato.base.model.GameService;
+import com.atraparalagato.base.service.GameService;
 import com.atraparalagato.impl.model.*;
 import com.atraparalagato.impl.strategy.AStarCatMovement;
 
