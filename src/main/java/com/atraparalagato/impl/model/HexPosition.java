@@ -8,12 +8,8 @@ public class HexPosition extends Position {
     private final int r;
 
     public static final HexPosition[] DIRECTIONS = {
-        new HexPosition(1, 0),
-        new HexPosition(1, -1),
-        new HexPosition(0, -1),
-        new HexPosition(-1, 0),
-        new HexPosition(-1, 1),
-        new HexPosition(0, 1)
+        new HexPosition(1, 0), new HexPosition(1, -1), new HexPosition(0, -1),
+        new HexPosition(-1, 0), new HexPosition(-1, 1), new HexPosition(0, 1)
     };
 
     public HexPosition(int q, int r) {
@@ -60,10 +56,7 @@ public class HexPosition extends Position {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(q, r);
-    }
-
+    public int hashCode() { return Objects.hash(q, r); }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
