@@ -4,6 +4,7 @@ import com.atraparalagato.base.repository.DataRepository;
 import com.atraparalagato.base.model.GameState;
 import com.atraparalagato.impl.model.HexGameState;
 import com.atraparalagato.impl.model.HexPosition;
+import com.atraparalagato.impl.model.HexGameBoard;
 
 import java.sql.*;
 import java.util.*;
@@ -14,9 +15,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/**
- * ImplementaciÃ³n de DataRepository usando base de datos H2.
- */
 public class H2GameRepository extends DataRepository<GameState<HexPosition>, String> {
 
     private Connection connection;
@@ -117,10 +115,11 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
     private HexGameState deserializeGameState(String serializedData, String gameId) {
         try {
             JSONObject json = new JSONObject(serializedData);
-            HexGameState state = new HexGameState(gameId, json.getInt("boardSize"));
+            int boardSize = json.getInt("boardSize");
+            HexGameBoard board = new HexGameBoard(boardSize);
 
             JSONArray catPos = json.getJSONArray("catPosition");
-            state.setCatPosition(new HexPosition(catPos.getInt(0), catPos.getInt(1)));
+            HexPosition catPosition = new HexPosition(catPos.getInt(0), catPos.getInt(1));
 
             JSONArray blockedArray = json.getJSONArray("blockedPositions");
             LinkedHashSet<HexPosition> blocked = new LinkedHashSet<>();
@@ -128,75 +127,28 @@ public class H2GameRepository extends DataRepository<GameState<HexPosition>, Str
                 JSONArray pos = blockedArray.getJSONArray(i);
                 blocked.add(new HexPosition(pos.getInt(0), pos.getInt(1)));
             }
-            state.getGameBoard().setBlockedPositions(blocked);
+            board.setBlockedPositions(blocked);
 
-            state.setMoveCount(json.getInt("moveCount"));
-            state.setBoardSize(json.getInt("boardSize"));
+            int moveCount = json.getInt("moveCount");
 
-            return state;
+            return new HexGameState(gameId, boardSize, catPosition, board, moveCount);
         } catch (JSONException e) {
             e.printStackTrace();
             throw new RuntimeException("Error al deserializar estado del juego", e);
         }
     }
 
-    @Override
-    public List<GameState<HexPosition>> findAll() {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar findAll");
-    }
-
-    @Override
-    public List<GameState<HexPosition>> findWhere(Predicate<GameState<HexPosition>> condition) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar findWhere");
-    }
-
-    @Override
-    public <R> List<R> findAndTransform(Predicate<GameState<HexPosition>> condition, Function<GameState<HexPosition>, R> transformer) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar findAndTransform");
-    }
-
-    @Override
-    public long countWhere(Predicate<GameState<HexPosition>> condition) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar countWhere");
-    }
-
-    @Override
-    public boolean deleteById(String id) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar deleteById");
-    }
-
-    @Override
-    public long deleteWhere(Predicate<GameState<HexPosition>> condition) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar deleteWhere");
-    }
-
-    @Override
-    public boolean existsById(String id) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar existsById");
-    }
-
-    @Override
-    public <R> R executeInTransaction(Function<DataRepository<GameState<HexPosition>, String>, R> operation) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar executeInTransaction");
-    }
-
-    @Override
-    public List<GameState<HexPosition>> findWithPagination(int page, int size) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar findWithPagination");
-    }
-
-    @Override
-    public List<GameState<HexPosition>> findAllSorted(Function<GameState<HexPosition>, ? extends Comparable<?>> sortKeyExtractor, boolean ascending) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar findAllSorted");
-    }
-
-    @Override
-    public <R> List<R> executeCustomQuery(String query, Function<Object, R> resultMapper) {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar executeCustomQuery");
-    }
-
-    @Override
-    protected void cleanup() {
-        throw new UnsupportedOperationException("Los estudiantes deben implementar cleanup");
-    }
+    // Métodos no implementados
+    @Override public List<GameState<HexPosition>> findAll() { throw new UnsupportedOperationException(); }
+    @Override public List<GameState<HexPosition>> findWhere(Predicate<GameState<HexPosition>> condition) { throw new UnsupportedOperationException(); }
+    @Override public <R> List<R> findAndTransform(Predicate<GameState<HexPosition>> condition, Function<GameState<HexPosition>, R> transformer) { throw new UnsupportedOperationException(); }
+    @Override public long countWhere(Predicate<GameState<HexPosition>> condition) { throw new UnsupportedOperationException(); }
+    @Override public boolean deleteById(String id) { throw new UnsupportedOperationException(); }
+    @Override public long deleteWhere(Predicate<GameState<HexPosition>> condition) { throw new UnsupportedOperationException(); }
+    @Override public boolean existsById(String id) { throw new UnsupportedOperationException(); }
+    @Override public <R> R executeInTransaction(Function<DataRepository<GameState<HexPosition>, String>, R> operation) { throw new UnsupportedOperationException(); }
+    @Override public List<GameState<HexPosition>> findWithPagination(int page, int size) { throw new UnsupportedOperationException(); }
+    @Override public List<GameState<HexPosition>> findAllSorted(Function<GameState<HexPosition>, ? extends Comparable<?>> sortKeyExtractor, boolean ascending) { throw new UnsupportedOperationException(); }
+    @Override public <R> List<R> executeCustomQuery(String query, Function<Object, R> resultMapper) { throw new UnsupportedOperationException(); }
+    @Override protected void cleanup() { throw new UnsupportedOperationException(); }
 }
