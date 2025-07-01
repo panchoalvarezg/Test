@@ -1,3 +1,4 @@
+// HexGameBoard.java
 package com.atraparalagato.impl.model;
 
 import com.atraparalagato.base.model.GameBoard;
@@ -8,8 +9,13 @@ import java.util.stream.Collectors;
 
 public class HexGameBoard extends GameBoard<HexPosition> {
 
-    private final int size = 11; // tamaño del tablero 11x11
+    private final int size = 11;
     private final Set<HexPosition> blockedPositions = new HashSet<>();
+
+    @Override
+    protected void initializeBlockedPositions() {
+        // No inicialización por defecto
+    }
 
     @Override
     public boolean isPositionInBounds(HexPosition position) {
@@ -65,11 +71,4 @@ public class HexGameBoard extends GameBoard<HexPosition> {
     public boolean isBlocked(HexPosition position) {
         return getAdjacentPositions(position).isEmpty();
     }
-
-    @Override
-    public List<Map<String, Integer>> getBlockedPositions() {
-        return blockedPositions.stream()
-                .map(pos -> Map.of("q", pos.getQ(), "r", pos.getR()))
-                .collect(Collectors.toList());
-    }
-}
+} 
