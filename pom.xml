@@ -51,7 +51,6 @@
         </dependency>
 
         <!-- Dependencia añadida para generar y procesar JSON -->
-        <!-- https://mvnrepository.com/artifact/org.json/json -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
@@ -64,6 +63,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.atraparalagato.AtraparAlGatoApplication</mainClass>
+                </configuration>
             </plugin>
             <!-- Excluir archivos de ejemplo de la compilación -->
             <plugin>
